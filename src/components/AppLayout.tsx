@@ -1,6 +1,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { BookOpen, Brain, LogOut, Target, User } from "lucide-react";
 import { Link, Outlet, useLocation } from "react-router-dom";
+import { ErrorBoundary } from "./ErrorBoundary";
 import { Button } from "./ui/button";
 
 const navItems = [
@@ -59,7 +60,9 @@ export function AppLayout() {
         </div>
       </header>
       <main className="mx-auto max-w-4xl px-4 py-6">
-        <Outlet />
+        <ErrorBoundary>
+          <Outlet />
+        </ErrorBoundary>
       </main>
     </div>
   );

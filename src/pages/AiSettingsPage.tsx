@@ -20,8 +20,9 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { getRoleInfo, getStrictnessLabel } from "@/lib/ai-role-utils";
 import { Save, Settings2, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 const TONES = [
@@ -33,17 +34,17 @@ const TONES = [
   {
     value: "gentle",
     label: "Gentle",
-    desc: "Encouraging, empathetic, focus on progress",
+    desc: "Empathetic and validating — focuses on emotional safety",
   },
   {
     value: "strict",
     label: "Strict",
-    desc: "Direct, challenging, accountability-focused",
+    desc: "Direct and results-oriented — challenges excuses",
   },
   {
     value: "analytical",
     label: "Analytical",
-    desc: "Data-driven, objective observations",
+    desc: "Data-driven — focuses on patterns and evidence",
   },
 ];
 
@@ -75,6 +76,15 @@ export function AiSettingsPage() {
       setCustomInstructions(settings.customInstructions ?? "");
     }
   }, [settings]);
+
+  const roleInfo = useMemo(
+    () => getRoleInfo(tone, strictness),
+    [tone, strictness],
+  );
+  const sliderLabel = useMemo(
+    () => getStrictnessLabel(tone, strictness),
+    [tone, strictness],
+  );
 
   const mutation = useMutation({
     mutationFn: updateAiSettings,
@@ -160,7 +170,12 @@ export function AiSettingsPage() {
           </div>
 
           <div className="space-y-2">
-            <Label>Strictness: {strictness}/10</Label>
+            <div className="flex items-center justify-between">
+              <Label>Strictness: {strictness}/10</Label>
+              <span className="text-xs font-medium text-muted-foreground">
+                {sliderLabel}
+              </span>
+            </div>
             <Slider
               min={1}
               max={10}
@@ -168,8 +183,12 @@ export function AiSettingsPage() {
               value={[strictness]}
               onValueChange={([v]) => setStrictness(v)}
             />
-            <p className="text-xs text-muted-foreground">
-              1 = very gentle, 10 = brutally honest
+            <p className="text-sm text-muted-foreground">
+              Your AI will act as:{" "}
+              <span className="font-medium text-foreground">
+                {roleInfo.role}
+              </span>{" "}
+              — {roleInfo.directive}
             </p>
           </div>
         </CardContent>
