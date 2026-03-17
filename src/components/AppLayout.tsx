@@ -1,5 +1,4 @@
-import { useAuth } from "@/context/AuthContext";
-import { BookOpen, Brain, LogOut, Target, User } from "lucide-react";
+import { BookOpen, Brain, Target, User } from "lucide-react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { Button } from "./ui/button";
@@ -22,7 +21,6 @@ const navItems = [
 ];
 
 export function AppLayout() {
-  const { user, logout } = useAuth();
   const location = useLocation();
 
   const isActive = (paths: string[]) =>
@@ -61,21 +59,7 @@ export function AppLayout() {
                 </Button>
               </Link>
             ))}
-            <span className="ml-2 text-sm text-muted-foreground">
-              {user?.name}
-            </span>
-            <Button variant="ghost" size="sm" onClick={logout}>
-              <LogOut className="h-4 w-4" />
-            </Button>
           </nav>
-
-          {/* Mobile header right — logout only */}
-          <div className="flex items-center gap-2 md:hidden">
-            <span className="text-sm text-muted-foreground">{user?.name}</span>
-            <Button variant="ghost" size="sm" onClick={logout}>
-              <LogOut className="h-4 w-4" />
-            </Button>
-          </div>
         </div>
       </header>
 

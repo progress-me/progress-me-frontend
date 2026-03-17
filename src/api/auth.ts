@@ -10,3 +10,14 @@ export async function login(data: LoginRequest): Promise<AuthResponse> {
   const res = await client.post<AuthResponse>("/auth/login", data);
   return res.data;
 }
+
+export async function refreshToken(token: string): Promise<AuthResponse> {
+  const res = await client.post<AuthResponse>("/auth/refresh", {
+    refreshToken: token,
+  });
+  return res.data;
+}
+
+export async function apiLogout(): Promise<void> {
+  await client.post("/auth/logout");
+}
