@@ -148,7 +148,7 @@ function StartersView({
         <div className="pointer-events-auto mx-auto max-w-xl">
           <ChatInput
             onSend={onSend}
-            placeholder="Ask about your progress, patterns, goals..."
+            placeholder="ask anything..."
           />
         </div>
       </div>
