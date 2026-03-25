@@ -34,13 +34,6 @@ export function AppLayout() {
       {/* Desktop header */}
       <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-4xl items-center justify-between px-4">
-          <Link
-            to="/entries"
-            className="font-display text-lg font-semibold tracking-tight"
-          >
-            Progress Me
-          </Link>
-
           {/* Desktop nav — hidden on mobile */}
           <nav className="hidden items-center gap-1 md:flex">
             {navItems.map(({ to, label, icon: Icon, paths }) => (
@@ -60,6 +53,13 @@ export function AppLayout() {
               </Link>
             ))}
           </nav>
+
+          <Link
+            to="/entries"
+            className="font-display text-lg font-semibold tracking-tight"
+          >
+            Progress Me
+          </Link>
         </div>
       </header>
 

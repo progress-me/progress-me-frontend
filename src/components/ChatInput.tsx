@@ -1,5 +1,3 @@
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Send } from "lucide-react";
 import { useRef, useState } from "react";
 
@@ -50,9 +48,9 @@ export function ChatInput({
   };
 
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-end gap-2">
-        <Textarea
+    <div className="space-y-1">
+      <div className="flex items-end gap-3 rounded-full border border-border/60 bg-background/70 px-4 py-2.5 shadow-sm backdrop-blur-md transition-colors focus-within:border-ring/50 focus-within:shadow-md">
+        <textarea
           ref={textareaRef}
           value={value}
           onChange={handleChange}
@@ -60,16 +58,16 @@ export function ChatInput({
           placeholder={placeholder}
           disabled={disabled}
           rows={1}
-          className="min-h-[40px] max-h-[160px] resize-none"
+          className="min-h-[44px] max-h-[160px] flex-1 resize-none bg-transparent py-2 text-base outline-none placeholder:text-muted-foreground/60 disabled:cursor-not-allowed disabled:opacity-50"
         />
-        <Button
-          size="icon"
+        <button
+          type="button"
           onClick={handleSubmit}
           disabled={!canSend}
-          className="shrink-0"
+          className="mb-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-all hover:bg-primary/90 disabled:opacity-30 disabled:hover:bg-primary"
         >
           <Send className="h-4 w-4" />
-        </Button>
+        </button>
       </div>
       {value.length > MAX_LENGTH * 0.9 && (
         <p

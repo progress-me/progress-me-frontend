@@ -7,14 +7,8 @@ import {
 } from "@/api/chat";
 import { ChatInput } from "@/components/ChatInput";
 import { ChatMessageList } from "@/components/ChatMessageList";
+import { MobileHistoryDrawer } from "@/components/MobileHistoryDrawer";
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
 import type { ChatMessageResponse } from "@/types/api";
 import { cn } from "@/lib/utils";
 import {
@@ -32,7 +26,7 @@ import {
   Plus,
   Sparkles,
 } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -119,36 +113,39 @@ function StartersView({
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-4">
-      <div className="w-full max-w-2xl space-y-8">
-        <div className="text-center">
-          <MessageCircle className="mx-auto mb-4 h-12 w-12 text-muted-foreground/40" />
-          <h2 className="text-2xl font-semibold tracking-tight">
-            How can I help?
-          </h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            I have access to your persona, values, goals, and recent entries
-          </p>
-        </div>
-
-        {starters && starters.length > 0 && (
-          <div className="flex flex-wrap justify-center gap-2">
-            {starters.map((starter) => (
-              <Button
-                key={starter.id}
-                variant="outline"
-                size="sm"
-                className="h-auto rounded-full px-4 py-2 text-sm"
-                onClick={() => onSend(starter.query)}
-              >
-                <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-                {starter.label}
-              </Button>
-            ))}
+    <div className="relative flex flex-1 flex-col">
+      <div className="flex flex-1 items-center justify-center overflow-y-auto px-3 pb-16 md:px-4 md:pb-16">
+        <div className="w-full max-w-2xl space-y-5 md:space-y-8">
+          <div className="text-center">
+            <MessageCircle className="mx-auto mb-3 h-9 w-9 text-muted-foreground/40 md:mb-4 md:h-12 md:w-12" />
+            <h2 className="text-xl font-semibold tracking-tight md:text-2xl">
+              How can I help?
+            </h2>
+            <p className="mt-1.5 text-xs text-muted-foreground md:mt-2 md:text-sm">
+              I have access to your persona, values, goals, and recent entries
+            </p>
           </div>
-        )}
 
-        <div className="mx-auto max-w-xl">
+          {starters && starters.length > 0 && (
+            <div className="flex flex-wrap justify-center gap-1.5 md:gap-2">
+              {starters.map((starter) => (
+                <Button
+                  key={starter.id}
+                  variant="outline"
+                  size="sm"
+                  className="h-auto rounded-full px-3 py-1.5 text-xs md:px-4 md:py-2 md:text-sm"
+                  onClick={() => onSend(starter.query)}
+                >
+                  <Sparkles className="mr-1 h-3 w-3 md:mr-1.5 md:h-3.5 md:w-3.5" />
+                  {starter.label}
+                </Button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-transparent via-background/80 to-transparent px-2 pb-6 pt-4 md:px-4 md:pb-6">
+        <div className="pointer-events-auto mx-auto max-w-xl">
           <ChatInput
             onSend={onSend}
             placeholder="Ask about your progress, patterns, goals..."
@@ -241,8 +238,8 @@ function ChatView({ sessionId }: { sessionId: string }) {
   const messages = data?.content ?? [];
 
   return (
-    <div className="flex flex-1 flex-col">
-      <div className="flex-1 overflow-y-auto px-4 py-4">
+    <div className="relative flex min-h-0 flex-1 flex-col">
+      <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-16 pt-3 md:px-4 md:pb-16 md:pt-4">
         <div className="mx-auto max-w-2xl">
           <ChatMessageList
             messages={messages}
@@ -250,8 +247,8 @@ function ChatView({ sessionId }: { sessionId: string }) {
           />
         </div>
       </div>
-      <div className="border-t px-3 py-2 md:px-4 md:py-3">
-        <div className="mx-auto max-w-2xl">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-transparent via-background/80 to-transparent px-2 pb-6 pt-4 md:px-4 md:pb-6">
+        <div className="pointer-events-auto mx-auto max-w-2xl">
           <ChatInput
             onSend={(msg) => sendMutation.mutate(msg)}
             disabled={sendMutation.isPending}
@@ -268,7 +265,10 @@ export function ChatPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  const handleOpenHistory = useCallback(() => setHistoryOpen(true), []);
+  const handleCloseHistory = useCallback(() => setHistoryOpen(false), []);
 
   const createMutation = useMutation({
     mutationFn: createChatSession,
@@ -283,12 +283,12 @@ export function ChatPage() {
 
   const handleNewChat = () => {
     navigate("/chat");
-    setSheetOpen(false);
+    setHistoryOpen(false);
   };
 
   const handleSelectSession = (id: string) => {
     navigate(`/chat/${id}`);
-    setSheetOpen(false);
+    setHistoryOpen(false);
   };
 
   const handleSend = (message: string) => {
@@ -311,34 +311,26 @@ export function ChatPage() {
         />
       </div>
 
-      {/* Main area */}
-      <div className="flex flex-1 flex-col">
-        {/* Top bar */}
-        <div className="flex h-12 items-center gap-2 border-b px-3">
-          {/* Mobile: Sheet trigger */}
-          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0">
-              <SheetHeader className="sr-only">
-                <SheetTitle>Chat history</SheetTitle>
-              </SheetHeader>
-              <SessionSidebar
-                sessionId={sessionId}
-                onSelect={handleSelectSession}
-                onNewChat={handleNewChat}
-              />
-            </SheetContent>
-          </Sheet>
+      {/* Mobile history drawer (swipe to open/close) */}
+      <MobileHistoryDrawer
+        isOpen={historyOpen}
+        onOpen={handleOpenHistory}
+        onClose={handleCloseHistory}
+      >
+        <SessionSidebar
+          sessionId={sessionId}
+          onSelect={handleSelectSession}
+          onNewChat={handleNewChat}
+        />
+      </MobileHistoryDrawer>
 
-          {/* Desktop: sidebar toggle */}
+      {/* Main area */}
+      <div className="flex min-h-0 flex-1 flex-col">
+        {/* Top bar — desktop only */}
+        <div className="hidden h-12 items-center gap-2 border-b px-3 md:flex">
           <Button
             variant="ghost"
             size="icon"
-            className="hidden md:inline-flex"
             onClick={() => setSidebarOpen((o) => !o)}
           >
             {sidebarOpen ? (
@@ -363,6 +355,16 @@ export function ChatPage() {
           />
         )}
       </div>
+
+      {/* Mobile history button */}
+      <button
+        type="button"
+        onClick={() => setHistoryOpen(true)}
+        className="fixed left-4 top-[4.25rem] z-30 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-transform active:scale-95 md:hidden"
+        aria-label="Chat history"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
     </div>
   );
 }
