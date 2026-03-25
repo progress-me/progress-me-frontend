@@ -8,9 +8,14 @@ import { AlertCircle, Plus } from "lucide-react";
 import { useState } from "react";
 import { CategoriesPage } from "./CategoriesPage";
 
-function GoalsContent() {
+function GoalsContent({
+  showCreate,
+  setShowCreate,
+}: {
+  showCreate: boolean;
+  setShowCreate: (open: boolean) => void;
+}) {
   const [statusFilter, setStatusFilter] = useState("all");
-  const [showCreate, setShowCreate] = useState(false);
 
   const {
     data: goals,
@@ -27,13 +32,6 @@ function GoalsContent() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-end">
-        <Button onClick={() => setShowCreate(true)}>
-          <Plus className="mr-1.5 h-4 w-4" />
-          New Goal
-        </Button>
-      </div>
-
       <Tabs value={statusFilter} onValueChange={setStatusFilter}>
         <TabsList>
           <TabsTrigger value="all">All</TabsTrigger>
@@ -74,23 +72,63 @@ function GoalsContent() {
 
 export function GoalsPage() {
   const [activeTab, setActiveTab] = useState("goals");
+  const [showCreateGoal, setShowCreateGoal] = useState(false);
+  const [showCreateCategory, setShowCreateCategory] = useState(false);
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">
-        {activeTab === "goals" ? "Goals" : "Values & Categories"}
-      </h1>
+      <div className="hidden items-center justify-between md:flex">
+        <h1 className="text-2xl font-bold">
+          {activeTab === "goals" ? "Goals" : "Values & Categories"}
+        </h1>
+        {activeTab === "goals" ? (
+          <Button onClick={() => setShowCreateGoal(true)}>
+            <Plus className="mr-1.5 h-4 w-4" />
+            New Goal
+          </Button>
+        ) : (
+          <Button onClick={() => setShowCreateCategory(true)}>
+            <Plus className="mr-1.5 h-4 w-4" />
+            New Category
+          </Button>
+        )}
+      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="goals">Goals</TabsTrigger>
-          <TabsTrigger value="values">Values & Categories</TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between">
+          <TabsList>
+            <TabsTrigger value="goals">Goals</TabsTrigger>
+            <TabsTrigger value="values">Values & Categories</TabsTrigger>
+          </TabsList>
+          {activeTab === "goals" ? (
+            <Button
+              onClick={() => setShowCreateGoal(true)}
+              className="md:hidden"
+            >
+              <Plus className="mr-1.5 h-4 w-4" />
+              New Goal
+            </Button>
+          ) : (
+            <Button
+              onClick={() => setShowCreateCategory(true)}
+              className="md:hidden"
+            >
+              <Plus className="mr-1.5 h-4 w-4" />
+              New Category
+            </Button>
+          )}
+        </div>
         <TabsContent value="goals" className="mt-4">
-          <GoalsContent />
+          <GoalsContent
+            showCreate={showCreateGoal}
+            setShowCreate={setShowCreateGoal}
+          />
         </TabsContent>
         <TabsContent value="values" className="mt-4">
-          <CategoriesPage />
+          <CategoriesPage
+            showCreate={showCreateCategory}
+            setShowCreate={setShowCreateCategory}
+          />
         </TabsContent>
       </Tabs>
     </div>

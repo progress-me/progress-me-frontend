@@ -3,12 +3,15 @@ import { CategoryCard } from "@/components/CategoryCard";
 import { CreateCategoryDialog } from "@/components/CreateCategoryDialog";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, Plus } from "lucide-react";
-import { useState } from "react";
+import { AlertCircle } from "lucide-react";
 
-export function CategoriesPage() {
-  const [showCreate, setShowCreate] = useState(false);
-
+export function CategoriesPage({
+  showCreate,
+  setShowCreate,
+}: {
+  showCreate: boolean;
+  setShowCreate: (open: boolean) => void;
+}) {
   const {
     data: categories,
     isLoading,
@@ -21,13 +24,6 @@ export function CategoriesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-end">
-        <Button onClick={() => setShowCreate(true)}>
-          <Plus className="mr-1.5 h-4 w-4" />
-          New Category
-        </Button>
-      </div>
-
       {isLoading && <p className="text-muted-foreground">Loading...</p>}
 
       {isError && (

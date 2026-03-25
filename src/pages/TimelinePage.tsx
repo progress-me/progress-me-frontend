@@ -342,7 +342,7 @@ export function TimelinePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="hidden items-center justify-between md:flex">
         <h1 className="text-2xl font-bold">
           {activeTab === "timeline" ? "Timeline" : "Dashboard"}
         </h1>
@@ -355,10 +355,12 @@ export function TimelinePage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="timeline">Timeline</TabsTrigger>
-          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between">
+          <TabsList>
+            <TabsTrigger value="timeline">Timeline</TabsTrigger>
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          </TabsList>
+        </div>
         <TabsContent value="timeline" className="mt-4">
           <TimelineContent />
         </TabsContent>
@@ -366,6 +368,13 @@ export function TimelinePage() {
           <DashboardContent />
         </TabsContent>
       </Tabs>
+
+      <Link
+        to="/entries/new"
+        className="fixed bottom-20 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform active:scale-95 md:hidden"
+      >
+        <PenLine className="h-6 w-6" />
+      </Link>
     </div>
   );
 }

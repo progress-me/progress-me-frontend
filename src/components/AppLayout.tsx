@@ -29,11 +29,18 @@ export function AppLayout() {
         location.pathname === path || location.pathname.startsWith(path + "/"),
     );
 
+  const currentPageName =
+    navItems.find(({ paths }) => isActive(paths))?.label ?? "Timeline";
+
   return (
     <div className="min-h-screen bg-background">
       {/* Desktop header */}
       <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-4xl items-center justify-between px-4">
+          {/* Mobile page name */}
+          <span className="text-lg font-semibold md:hidden">
+            {currentPageName === "AI" ? "AI Chat" : currentPageName}
+          </span>
           {/* Desktop nav — hidden on mobile */}
           <nav className="hidden items-center gap-1 md:flex">
             {navItems.map(({ to, label, icon: Icon, paths }) => (
