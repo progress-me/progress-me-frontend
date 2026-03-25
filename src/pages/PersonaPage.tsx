@@ -1,4 +1,5 @@
 import { getPersona, updatePersona } from "@/api/persona";
+import { AiSettingsPage } from "./AiSettingsPage";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -265,6 +266,8 @@ export function PersonaPage() {
           )}
         </CardContent>
       </Card>
+      {/* AI Settings */}
+      <AiSettingsPage />
     </div>
   );
 }

@@ -1,10 +1,9 @@
 import { AppLayout } from "@/components/AppLayout";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AuthProvider } from "@/context/AuthContext";
-import { AnalysisPage } from "@/pages/AnalysisPage";
+import { ChatPage } from "@/pages/ChatPage";
 import { GoalDetailPage } from "@/pages/GoalDetailPage";
 import { GoalsPage } from "@/pages/GoalsPage";
-import { InsightDetailPage } from "@/pages/InsightDetailPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { NewEntryPage } from "@/pages/NewEntryPage";
 import { PersonaPage } from "@/pages/PersonaPage";
@@ -24,8 +23,8 @@ export default function App() {
             <Route path="/entries/new" element={<NewEntryPage />} />
             <Route path="/goals" element={<GoalsPage />} />
             <Route path="/goals/:id" element={<GoalDetailPage />} />
-            <Route path="/analysis" element={<AnalysisPage />} />
-            <Route path="/insights/:id" element={<InsightDetailPage />} />
+            <Route path="/chat" element={<ChatPage />} />
+            <Route path="/chat/:sessionId" element={<ChatPage />} />
             <Route path="/profile" element={<PersonaPage />} />
             {/* Redirects for old bookmarks */}
             <Route
@@ -36,13 +35,15 @@ export default function App() {
               path="/categories"
               element={<Navigate to="/goals" replace />}
             />
+            <Route path="/analysis" element={<Navigate to="/chat" replace />} />
+            <Route path="/insights" element={<Navigate to="/chat" replace />} />
             <Route
-              path="/insights"
-              element={<Navigate to="/analysis" replace />}
+              path="/insights/:id"
+              element={<Navigate to="/chat" replace />}
             />
             <Route
               path="/ai-settings"
-              element={<Navigate to="/analysis" replace />}
+              element={<Navigate to="/profile" replace />}
             />
           </Route>
         </Route>

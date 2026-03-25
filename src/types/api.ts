@@ -267,29 +267,34 @@ export interface TopValueInfo {
   count: number;
 }
 
-// --- AI Insights ---
+// --- Chat ---
 
-export interface AnalyzeRequest {
-  query: string;
-  type?: string;
+export interface ChatSessionResponse {
+  id: string;
+  title: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface InsightResponse {
+export interface ChatMessageResponse {
   id: string;
-  type: string;
-  query: string;
+  role: "USER" | "ASSISTANT";
   content: string;
-  contextSummary: string | null;
-  model: string;
-  tokensUsed: number | null;
   createdAt: string;
+}
+
+export interface CreateSessionRequest {
+  message: string;
+}
+
+export interface SendMessageRequest {
+  message: string;
 }
 
 export interface PrebuiltPromptResponse {
   id: string;
   label: string;
   query: string;
-  type: string;
 }
 
 // --- AI Settings ---

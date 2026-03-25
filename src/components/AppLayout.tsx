@@ -1,4 +1,4 @@
-import { BookOpen, Brain, Target, User } from "lucide-react";
+import { BookOpen, MessageCircle, Target, User } from "lucide-react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { Button } from "./ui/button";
@@ -12,10 +12,10 @@ const navItems = [
     paths: ["/goals", "/categories"],
   },
   {
-    to: "/analysis",
+    to: "/chat",
     label: "AI",
-    icon: Brain,
-    paths: ["/analysis", "/insights", "/ai-settings"],
+    icon: MessageCircle,
+    paths: ["/chat"],
   },
   { to: "/profile", label: "Profile", icon: User, paths: ["/profile"] },
 ];
@@ -55,7 +55,7 @@ export function AppLayout() {
                   }
                 >
                   <Icon className="mr-1.5 h-4 w-4" />
-                  {label === "AI" ? "AI Analysis" : label}
+                  {label === "AI" ? "AI Chat" : label}
                 </Button>
               </Link>
             ))}
@@ -81,7 +81,7 @@ export function AppLayout() {
               <Link
                 key={to}
                 to={to}
-                aria-label={label === "AI" ? "AI Analysis" : label}
+                aria-label={label === "AI" ? "AI Chat" : label}
                 aria-current={active ? "page" : undefined}
                 className="flex flex-1 flex-col items-center gap-0.5 py-1"
               >
