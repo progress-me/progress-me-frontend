@@ -12,16 +12,56 @@ export function ChatMessageList({
   messages,
   isPending = false,
 }: ChatMessageListProps) {
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const prevCountRef = useRef(messages.length);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length, isPending]);
+    const container = containerRef.current;
+    if (!container) return;
+
+    const prevCount = prevCountRef.current;
+    prevCountRef.current = messages.length;
+
+    if (messages.length === 0) return;
+
+    const lastMessage = messages[messages.length - 1];
+
+    // When AI response arrives, scroll to its start with ~80px context above
+    if (messages.length > prevCount && lastMessage.role === "ASSISTANT") {
+      const lastEl = container.querySelector<HTMLElement>(
+        `[data-message-index="${messages.length - 1}"]`,
+      );
+      if (lastEl) {
+        const scrollParent = container.closest<HTMLElement>(
+          "[class*='overflow-y-auto']",
+        );
+        if (scrollParent) {
+          const containerRect = scrollParent.getBoundingClientRect();
+          const elRect = lastEl.getBoundingClientRect();
+          const offset =
+            scrollParent.scrollTop + (elRect.top - containerRect.top) - 80;
+          scrollParent.scrollTo({ top: offset, behavior: "smooth" });
+          return;
+        }
+      }
+    }
+
+    // For user messages or pending state, scroll to bottom
+    if (
+      isPending ||
+      (messages.length > prevCount && lastMessage.role === "USER")
+    ) {
+      const bottomEl = container.querySelector("[data-bottom-ref]");
+      bottomEl?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isPending]);
 
   return (
-    <div className="flex flex-col gap-4">
-      {messages.map((message) => (
-        <ChatMessageBubble key={message.id} message={message} />
+    <div ref={containerRef} className="flex flex-col gap-4">
+      {messages.map((message, index) => (
+        <div key={message.id} data-message-index={index}>
+          <ChatMessageBubble message={message} />
+        </div>
       ))}
       {isPending && (
         <div className="flex items-start gap-2">
@@ -30,7 +70,7 @@ export function ChatMessageList({
           </div>
         </div>
       )}
-      <div ref={bottomRef} />
+      <div data-bottom-ref />
     </div>
   );
 }

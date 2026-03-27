@@ -146,10 +146,7 @@ function StartersView({
       </div>
       <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-transparent via-background/80 to-transparent px-2 pb-6 pt-4 md:px-4 md:pb-6">
         <div className="pointer-events-auto mx-auto max-w-xl">
-          <ChatInput
-            onSend={onSend}
-            placeholder="ask anything..."
-          />
+          <ChatInput onSend={onSend} placeholder="ask anything..." />
         </div>
       </div>
     </div>
@@ -200,7 +197,14 @@ function ChatView({ sessionId }: { sessionId: string }) {
           if (!old) return old;
           return {
             ...old,
-            content: [...old.content, assistantMessage],
+            content: [
+              ...old.content,
+              {
+                ...assistantMessage,
+                createdAt:
+                  assistantMessage.createdAt ?? new Date().toISOString(),
+              },
+            ],
           };
         },
       );
@@ -239,7 +243,7 @@ function ChatView({ sessionId }: { sessionId: string }) {
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
-      <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-16 pt-3 md:px-4 md:pb-16 md:pt-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-24 pt-3 md:px-4 md:pb-24 md:pt-4">
         <div className="mx-auto max-w-2xl">
           <ChatMessageList
             messages={messages}
@@ -296,7 +300,7 @@ export function ChatPage() {
   };
 
   return (
-    <div className="-mx-4 -my-6 flex h-[calc(100dvh-3.5rem-4rem)] md:h-[calc(100dvh-3.5rem)]">
+    <div className="-mx-4 -mt-6 -mb-16 md:-mb-6 flex overflow-hidden h-[calc(100dvh-3.5rem-4rem)] md:h-[calc(100dvh-3.5rem)]">
       {/* Desktop sidebar */}
       <div
         className={cn(

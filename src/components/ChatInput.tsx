@@ -44,12 +44,13 @@ export function ChatInput({
     }
     const textarea = e.target;
     textarea.style.height = "auto";
-    textarea.style.height = `${Math.min(textarea.scrollHeight, 160)}px`;
+    const newHeight = Math.min(textarea.scrollHeight, 160);
+    textarea.style.height = `${newHeight}px`;
   };
 
   return (
     <div className="space-y-1">
-      <div className="flex items-end gap-3 rounded-full border border-border/60 bg-background/70 px-4 py-2.5 shadow-sm backdrop-blur-md transition-colors focus-within:border-ring/50 focus-within:shadow-md">
+      <div className="flex items-end gap-3 rounded-2xl border border-border/60 bg-background/70 px-4 py-2.5 shadow-sm backdrop-blur-md transition-colors focus-within:border-ring/50 focus-within:shadow-md">
         <textarea
           ref={textareaRef}
           value={value}
