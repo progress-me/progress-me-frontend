@@ -61,65 +61,54 @@ export function ScaleSelector({
   value: number;
   onChange: (v: number) => void;
 }) {
-  const selected = scale.find((s) => s.value === value) ?? scale[4];
-  const progress = ((value - 1) / 9) * 100;
+  const selected = scale.find((s) => s.value === value) ?? scale[5];
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2.5 rounded-2xl bg-muted/20 p-4 ring-1 ring-border/30">
+      {/* Label + current value */}
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+        <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
           {label}
         </span>
         <span
-          className="rounded-full px-3 py-1 text-sm font-medium transition-colors"
+          className="rounded-full px-2 py-0.5 text-xs font-medium"
           style={{ color: selected.color, backgroundColor: selected.bg }}
         >
-          {selected.emoji} {selected.label}
+          {selected.label}
         </span>
       </div>
 
-      {/* Gradient track */}
-      <div className="relative">
-        <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full rounded-full transition-all duration-200"
-            style={{
-              width: `${progress}%`,
-              background:
-                "linear-gradient(90deg, #ef4444, #f59e0b, #22c55e, #14b8a6)",
-            }}
-          />
-        </div>
-        <div className="relative flex justify-between">
-          {scale.map((option) => {
-            const isSelected = option.value === value;
-            return (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => onChange(option.value)}
-                className="group relative flex h-9 w-9 items-center justify-center"
+      {/* Emoji grid — 2 rows of 5 */}
+      <div className="grid grid-cols-5 gap-1.5">
+        {scale.map((opt) => {
+          const isActive = opt.value === value;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => onChange(opt.value)}
+              className="flex flex-col items-center gap-0.5 rounded-xl py-1.5 transition-all duration-150"
+              style={{
+                opacity: isActive ? 1 : 0.45,
+                filter: isActive ? "none" : "grayscale(60%)",
+                backgroundColor: isActive ? selected.bg : "transparent",
+                boxShadow: isActive
+                  ? `0 0 0 1.5px ${selected.color}30`
+                  : "none",
+              }}
+            >
+              <span className="text-2xl leading-none">{opt.emoji}</span>
+              <span
+                className="text-[10px] font-medium leading-none"
+                style={{
+                  color: isActive ? selected.color : "var(--muted-foreground)",
+                }}
               >
-                <span
-                  className="relative z-10 text-lg transition-all duration-200 group-hover:scale-125"
-                  style={{
-                    filter: isSelected ? "none" : "grayscale(80%)",
-                    opacity: isSelected ? 1 : 0.35,
-                    transform: isSelected ? "scale(1.35)" : undefined,
-                  }}
-                >
-                  {option.emoji}
-                </span>
-                {isSelected && (
-                  <span
-                    className="absolute inset-0 rounded-xl"
-                    style={{ backgroundColor: option.bg }}
-                  />
-                )}
-              </button>
-            );
-          })}
-        </div>
+                {opt.label}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

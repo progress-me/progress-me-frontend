@@ -1,6 +1,6 @@
 import { listCategories } from "@/api/categories";
 import { listGoals } from "@/api/goals";
-import { createLogEntry } from "@/api/log-entries";
+import { createLogEntry, listLogEntries } from "@/api/log-entries";
 import {
   ENERGY_SCALE,
   MOOD_SCALE,
@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { computeCategoryTagGroups } from "@/lib/entry-utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Send } from "lucide-react";
+import { ChevronDown, Send } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -25,6 +25,13 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
 export function NewEntryPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -34,7 +41,10 @@ export function NewEntryPage() {
   const [selectedGoalIds, setSelectedGoalIds] = useState<string[]>([]);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [isTagsOpen, setIsTagsOpen] = useState(false);
   const goalsInitialized = useRef(false);
+  const moodEnergyInitialized = useRef(false);
+  const userTouchedMoodEnergy = useRef(false);
 
   const { data: goals } = useQuery({
     queryKey: ["goals", "active"],
@@ -45,6 +55,40 @@ export function NewEntryPage() {
     queryKey: ["categories"],
     queryFn: listCategories,
   });
+
+  const todayRange = useMemo(() => {
+    const now = new Date();
+    const offset = -now.getTimezoneOffset();
+    const sign = offset >= 0 ? "+" : "-";
+    const hh = String(Math.floor(Math.abs(offset) / 60)).padStart(2, "0");
+    const mm = String(Math.abs(offset) % 60).padStart(2, "0");
+    const tz = `${sign}${hh}:${mm}`;
+    const d = now.toISOString().slice(0, 10);
+    return { from: `${d}T00:00:00${tz}`, to: `${d}T23:59:59${tz}` };
+  }, []);
+
+  const { data: todayEntries } = useQuery({
+    queryKey: ["log-entries", "today-latest", todayRange.from],
+    queryFn: () =>
+      listLogEntries({ from: todayRange.from, to: todayRange.to, size: 1 }),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Carry forward mood/energy from today's last entry
+  useEffect(() => {
+    if (
+      todayEntries &&
+      !moodEnergyInitialized.current &&
+      !userTouchedMoodEnergy.current
+    ) {
+      moodEnergyInitialized.current = true;
+      const lastEntry = todayEntries.content[0];
+      if (lastEntry) {
+        if (lastEntry.mood !== null) setMood(lastEntry.mood);
+        if (lastEntry.energy !== null) setEnergy(lastEntry.energy);
+      }
+    }
+  }, [todayEntries]);
 
   useEffect(() => {
     if (goals && !goalsInitialized.current) {
@@ -97,6 +141,16 @@ export function NewEntryPage() {
     onError: () => toast.error("Failed to create entry"),
   });
 
+  function handleMoodChange(v: number) {
+    userTouchedMoodEnergy.current = true;
+    setMood(v);
+  }
+
+  function handleEnergyChange(v: number) {
+    userTouchedMoodEnergy.current = true;
+    setEnergy(v);
+  }
+
   function toggleGoal(goalId: string, isDefault: boolean) {
     if (isDefault) return;
     setSelectedGoalIds((prev) =>
@@ -140,20 +194,27 @@ export function NewEntryPage() {
 
   const nonDefaultGoals = goals?.filter((g) => !g.isDefault) ?? [];
   const defaultGoal = goals?.find((g) => g.isDefault);
+  const totalAvailableTags = tagGroups.reduce(
+    (sum, g) => sum + g.values.length,
+    0,
+  );
 
   return (
     <div className="mx-auto max-w-2xl py-2">
       {/* Header */}
-      <div className="mb-8 flex items-end justify-between">
+      <div className="mb-6 flex items-end justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">New Entry</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{today}</p>
+          <p className="text-sm text-muted-foreground">{getGreeting()}</p>
+          <h1 className="font-display text-3xl font-semibold tracking-tight">
+            New Entry
+          </h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">{today}</p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-6">
         {/* Writing area */}
-        <div>
+        <div className="overflow-hidden rounded-2xl bg-card ring-1 ring-border/50">
           <Label htmlFor="content" className="sr-only">
             Content
           </Label>
@@ -162,197 +223,233 @@ export function NewEntryPage() {
             required
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            rows={10}
+            rows={5}
             placeholder="How was your day? What did you accomplish? What's on your mind?"
-            className="resize-none border-0 bg-muted/30 px-5 py-4 text-[15px] leading-relaxed shadow-none ring-1 ring-border/50 transition-all placeholder:text-muted-foreground/40 focus-visible:bg-background focus-visible:ring-2 focus-visible:ring-ring"
+            className="min-h-[140px] resize-none border-0 bg-transparent px-5 py-4 text-[15px] leading-relaxed shadow-none ring-0 placeholder:text-muted-foreground/40 focus-visible:ring-0"
           />
         </div>
 
-        {/* Categories as pills */}
-        {categories && categories.length > 0 && (
-          <div className="space-y-3">
-            <SectionLabel>Focus Areas</SectionLabel>
-            <div className="flex flex-wrap gap-2">
-              {categories.map((cat) => {
-                const isSelected = selectedCategoryIds.includes(cat.id);
-                const color = cat.color ?? "#607D8B";
-                return (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => toggleCategory(cat.id)}
-                    className="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-all hover:shadow-sm"
-                    style={
-                      isSelected
-                        ? {
-                            backgroundColor: color + "18",
-                            borderColor: color + "40",
-                            color,
-                          }
-                        : {
-                            borderColor: "var(--border)",
-                            color: "var(--muted-foreground)",
-                          }
-                    }
-                  >
-                    <span
-                      className="h-2 w-2 rounded-full transition-transform"
-                      style={{
-                        backgroundColor: color,
-                        transform: isSelected ? "scale(1.3)" : "scale(1)",
-                      }}
-                    />
-                    {cat.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Goals as pills */}
-        {goals && goals.length > 0 && (
-          <div className="space-y-3">
-            <SectionLabel>Goals</SectionLabel>
-            <div className="flex flex-wrap gap-2">
-              {/* Default goal — always-on pill */}
-              {defaultGoal && (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-1.5 text-sm font-medium text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-400">
-                  <svg
-                    className="h-3 w-3"
-                    viewBox="0 0 12 12"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M2 6l3 3 5-5" />
-                  </svg>
-                  {defaultGoal.title}
-                </span>
-              )}
-
-              {/* Toggleable goals */}
-              {nonDefaultGoals.map((g) => {
-                const isEffective = effectiveGoalIds.includes(g.id);
-                const fromCategory = g.categories.some((c) =>
-                  selectedCategoryIds.includes(c.id),
-                );
-                const catColor = g.categories[0]?.color ?? "var(--foreground)";
-                return (
-                  <button
-                    key={g.id}
-                    type="button"
-                    onClick={() => !fromCategory && toggleGoal(g.id, false)}
-                    className="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-all hover:shadow-sm disabled:cursor-default disabled:opacity-70"
-                    disabled={fromCategory}
-                    style={
-                      isEffective
-                        ? {
-                            backgroundColor:
-                              (g.categories[0]?.color ?? "#6366f1") + "18",
-                            borderColor:
-                              (g.categories[0]?.color ?? "#6366f1") + "40",
-                            color: catColor,
-                          }
-                        : {
-                            borderColor: "var(--border)",
-                            color: "var(--muted-foreground)",
-                          }
-                    }
-                  >
-                    {g.title}
-                    {fromCategory && (
-                      <span className="text-[10px] opacity-60">auto</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Tags grouped by category */}
-        {tagGroups.length > 0 && (
-          <div className="space-y-4">
-            <SectionLabel>Values</SectionLabel>
-            {tagGroups.map((group) => (
-              <div key={group.categoryId} className="space-y-2">
-                <div className="flex items-center gap-2">
-                  {group.categoryColor && (
-                    <span
-                      className="h-1.5 w-1.5 rounded-full"
-                      style={{ backgroundColor: group.categoryColor }}
-                    />
-                  )}
-                  <span className="text-xs font-medium text-muted-foreground">
-                    {group.categoryName}
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {group.values.map((v) => {
-                    const isSelected = validSelectedTags.includes(v.id);
+        {/* Focus Areas + Goals grouped card */}
+        {((categories && categories.length > 0) ||
+          (goals && goals.length > 0)) && (
+          <div className="space-y-5 rounded-2xl bg-muted/15 p-5 ring-1 ring-border/25">
+            {/* Categories as pills */}
+            {categories && categories.length > 0 && (
+              <div className="space-y-3">
+                <SectionLabel>Focus Areas</SectionLabel>
+                <div className="flex flex-wrap gap-2">
+                  {categories.map((cat) => {
+                    const isSelected = selectedCategoryIds.includes(cat.id);
+                    const color = cat.color ?? "#607D8B";
                     return (
-                      <Badge
-                        key={v.id}
-                        variant={isSelected ? "default" : "outline"}
-                        className="cursor-pointer transition-all hover:shadow-sm"
-                        onClick={() => toggleTag(v.id)}
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => toggleCategory(cat.id)}
+                        className="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-all hover:shadow-sm"
                         style={
-                          isSelected && group.categoryColor
+                          isSelected
                             ? {
-                                backgroundColor: group.categoryColor,
-                                borderColor: group.categoryColor,
+                                backgroundColor: color + "18",
+                                borderColor: color + "40",
+                                color,
                               }
-                            : undefined
+                            : {
+                                borderColor: "var(--border)",
+                                color: "var(--muted-foreground)",
+                              }
                         }
                       >
-                        {v.name}
-                      </Badge>
+                        <span
+                          className="h-2 w-2 rounded-full transition-transform"
+                          style={{
+                            backgroundColor: color,
+                            transform: isSelected ? "scale(1.3)" : "scale(1)",
+                          }}
+                        />
+                        {cat.name}
+                      </button>
                     );
                   })}
                 </div>
               </div>
-            ))}
+            )}
+
+            {/* Divider between focus areas and goals */}
+            {categories &&
+              categories.length > 0 &&
+              goals &&
+              goals.length > 0 && <div className="border-t border-border/30" />}
+
+            {/* Goals as pills */}
+            {goals && goals.length > 0 && (
+              <div className="space-y-3">
+                <SectionLabel>Goals</SectionLabel>
+                <div className="flex flex-wrap gap-2">
+                  {/* Default goal */}
+                  {defaultGoal && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-1.5 text-sm font-medium text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-400">
+                      <svg
+                        className="h-3 w-3"
+                        viewBox="0 0 12 12"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M2 6l3 3 5-5" />
+                      </svg>
+                      {defaultGoal.title}
+                    </span>
+                  )}
+
+                  {/* Toggleable goals */}
+                  {nonDefaultGoals.map((g) => {
+                    const isEffective = effectiveGoalIds.includes(g.id);
+                    const fromCategory = g.categories.some((c) =>
+                      selectedCategoryIds.includes(c.id),
+                    );
+                    const catColor =
+                      g.categories[0]?.color ?? "var(--foreground)";
+                    return (
+                      <button
+                        key={g.id}
+                        type="button"
+                        onClick={() => !fromCategory && toggleGoal(g.id, false)}
+                        className="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-all hover:shadow-sm disabled:cursor-default disabled:opacity-70"
+                        disabled={fromCategory}
+                        style={
+                          isEffective
+                            ? {
+                                backgroundColor:
+                                  (g.categories[0]?.color ?? "#6366f1") + "18",
+                                borderColor:
+                                  (g.categories[0]?.color ?? "#6366f1") + "40",
+                                color: catColor,
+                              }
+                            : {
+                                borderColor: "var(--border)",
+                                color: "var(--muted-foreground)",
+                              }
+                        }
+                      >
+                        {g.title}
+                        {fromCategory && (
+                          <span className="text-[10px] opacity-60">auto</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Divider */}
-        <div className="border-t" />
+        {/* Tags — collapsible */}
+        {tagGroups.length > 0 && (
+          <div className="rounded-2xl bg-muted/15 ring-1 ring-border/25">
+            <button
+              type="button"
+              onClick={() => setIsTagsOpen((prev) => !prev)}
+              className="flex w-full items-center justify-between px-5 py-4"
+            >
+              <div className="flex items-center gap-2">
+                <SectionLabel>Values</SectionLabel>
+                {totalAvailableTags > 0 && (
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    {totalAvailableTags}
+                  </span>
+                )}
+              </div>
+              <ChevronDown
+                className="h-4 w-4 text-muted-foreground transition-transform duration-200"
+                style={{
+                  transform: isTagsOpen ? "rotate(180deg)" : "rotate(0deg)",
+                }}
+              />
+            </button>
 
-        {/* Mood & Energy */}
-        <div className="space-y-6">
+            {isTagsOpen && (
+              <div className="space-y-4 px-5 pb-5">
+                {tagGroups.map((group) => (
+                  <div key={group.categoryId} className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      {group.categoryColor && (
+                        <span
+                          className="h-1.5 w-1.5 rounded-full"
+                          style={{ backgroundColor: group.categoryColor }}
+                        />
+                      )}
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {group.categoryName}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {group.values.map((v) => {
+                        const isSelected = validSelectedTags.includes(v.id);
+                        return (
+                          <Badge
+                            key={v.id}
+                            variant={isSelected ? "default" : "outline"}
+                            className="cursor-pointer transition-all hover:shadow-sm"
+                            onClick={() => toggleTag(v.id)}
+                            style={
+                              isSelected && group.categoryColor
+                                ? {
+                                    backgroundColor: group.categoryColor,
+                                    borderColor: group.categoryColor,
+                                  }
+                                : undefined
+                            }
+                          >
+                            {v.name}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Mood & Energy — side by side on desktop */}
+        <div className="grid gap-4 sm:grid-cols-2">
           <ScaleSelector
             label="Mood"
             scale={MOOD_SCALE}
             value={mood}
-            onChange={setMood}
+            onChange={handleMoodChange}
           />
           <ScaleSelector
             label="Energy Level"
             scale={ENERGY_SCALE}
             value={energy}
-            onChange={setEnergy}
+            onChange={handleEnergyChange}
           />
         </div>
 
-        {/* Submit */}
-        <Button
-          type="submit"
-          size="lg"
-          className="w-full gap-2 text-base"
-          disabled={mutation.isPending || !content.trim()}
-        >
-          {mutation.isPending ? (
-            "Creating..."
-          ) : (
-            <>
-              <Send className="h-4 w-4" />
-              Create Entry
-            </>
-          )}
-        </Button>
+        {/* Submit — sticky on mobile */}
+        <div className="sticky bottom-[72px] z-10 -mx-4 bg-gradient-to-t from-background via-background/95 to-transparent px-4 pb-2 pt-8 md:static md:mx-0 md:bg-none md:p-0">
+          <Button
+            type="submit"
+            size="lg"
+            className="w-full gap-2 text-base"
+            disabled={mutation.isPending || !content.trim()}
+          >
+            {mutation.isPending ? (
+              "Creating..."
+            ) : (
+              <>
+                <Send className="h-4 w-4" />
+                Create Entry
+              </>
+            )}
+          </Button>
+        </div>
       </form>
     </div>
   );
