@@ -352,7 +352,7 @@ export function ChatPage() {
   };
 
   return (
-    <div className="flex overflow-hidden h-[calc(100dvh-3.5rem-4rem)] md:h-[calc(100dvh-3.5rem)]">
+    <div className="flex overflow-hidden h-[calc(100svh-3.5rem-4rem)] md:h-[calc(100dvh-3.5rem)]">
       {/* Desktop sidebar — always visible */}
       <div className="hidden w-72 border-r bg-muted/30 md:flex md:flex-col">
         <SessionSidebar
