@@ -70,7 +70,13 @@ export function AppLayout() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-4 py-6 pb-20 md:pb-6">
+      <main
+        className={
+          location.pathname.startsWith("/chat")
+            ? ""
+            : "mx-auto max-w-4xl px-4 py-6 pb-20 md:pb-6"
+        }
+      >
         <ErrorBoundary>
           <Outlet />
         </ErrorBoundary>

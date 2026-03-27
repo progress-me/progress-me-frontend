@@ -9,26 +9,46 @@ import { ChatInput } from "@/components/ChatInput";
 import { ChatMessageList } from "@/components/ChatMessageList";
 import { MobileHistoryDrawer } from "@/components/MobileHistoryDrawer";
 import { Button } from "@/components/ui/button";
-import type { ChatMessageResponse } from "@/types/api";
-import { cn } from "@/lib/utils";
+import type { ChatMessageResponse, ChatSessionResponse } from "@/types/api";
 import {
   keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import {
-  Loader2,
-  Menu,
-  MessageCircle,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Plus,
-  Sparkles,
-} from "lucide-react";
+import { Loader2, Menu, MessageCircle, Plus, Sparkles } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
+
+function getDateGroup(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const weekAgo = new Date(today);
+  weekAgo.setDate(weekAgo.getDate() - 7);
+
+  if (date >= today) return "Today";
+  if (date >= weekAgo) return "This week";
+  return "Older";
+}
+
+function groupSessionsByDate(
+  sessions: ChatSessionResponse[],
+): { label: string; sessions: ChatSessionResponse[] }[] {
+  const order = ["Today", "This week", "Older"];
+  const groups = new Map<string, ChatSessionResponse[]>();
+
+  for (const session of sessions) {
+    const group = getDateGroup(session.updatedAt);
+    if (!groups.has(group)) groups.set(group, []);
+    groups.get(group)!.push(session);
+  }
+
+  return order
+    .filter((label) => groups.has(label))
+    .map((label) => ({ label, sessions: groups.get(label)! }));
+}
 
 function SessionSidebar({
   sessionId,
@@ -45,6 +65,8 @@ function SessionSidebar({
     placeholderData: keepPreviousData,
   });
 
+  const grouped = data ? groupSessionsByDate(data.content) : [];
+
   return (
     <div className="flex h-full flex-col">
       <div className="p-3">
@@ -58,24 +80,27 @@ function SessionSidebar({
         </Button>
       </div>
       <div className="flex-1 overflow-y-auto px-2">
-        {data?.content.map((session) => (
-          <button
-            key={session.id}
-            onClick={() => onSelect(session.id)}
-            className={cn(
-              "w-full rounded-lg px-3 py-2.5 text-left text-sm transition-colors mb-0.5",
-              session.id === sessionId
-                ? "bg-accent text-accent-foreground"
-                : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-            )}
-          >
-            <p className="truncate font-medium">
-              {session.title ?? "New conversation"}
+        {grouped.map((group) => (
+          <div key={group.label}>
+            <p className="px-3 pb-1.5 pt-3 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
+              {group.label}
             </p>
-            <p className="truncate text-xs opacity-60">
-              {new Date(session.updatedAt).toLocaleDateString()}
-            </p>
-          </button>
+            {group.sessions.map((session) => (
+              <button
+                key={session.id}
+                onClick={() => onSelect(session.id)}
+                className={`w-full rounded-lg px-3 py-2 text-left text-sm transition-colors mb-0.5 ${
+                  session.id === sessionId
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                }`}
+              >
+                <p className="truncate font-medium">
+                  {session.title ?? "New conversation"}
+                </p>
+              </button>
+            ))}
+          </div>
         ))}
         {data && data.content.length === 0 && (
           <p className="px-3 py-6 text-center text-xs text-muted-foreground">
@@ -114,37 +139,65 @@ function StartersView({
 
   return (
     <div className="relative flex flex-1 flex-col">
-      <div className="flex flex-1 items-center justify-center overflow-y-auto px-3 pb-16 md:px-4 md:pb-16">
-        <div className="w-full max-w-2xl space-y-5 md:space-y-8">
+      {/* Mobile: scrollable content with bottom-pinned input */}
+      {/* Desktop: centered content with inline input */}
+      <div className="flex flex-1 items-center justify-center overflow-y-auto px-3 pb-20 md:pb-4 md:px-4">
+        <div className="w-full max-w-lg space-y-5 md:space-y-6">
           <div className="text-center">
             <MessageCircle className="mx-auto mb-3 h-9 w-9 text-muted-foreground/40 md:mb-4 md:h-12 md:w-12" />
             <h2 className="text-xl font-semibold tracking-tight md:text-2xl">
-              How can I help?
+              What's on your mind?
             </h2>
             <p className="mt-1.5 text-xs text-muted-foreground md:mt-2 md:text-sm">
               I have access to your persona, values, goals, and recent entries
             </p>
           </div>
 
+          {/* Desktop: centered input */}
+          <div className="hidden md:block">
+            <ChatInput
+              onSend={onSend}
+              placeholder="Ask anything about your progress..."
+            />
+          </div>
+
           {starters && starters.length > 0 && (
-            <div className="flex flex-wrap justify-center gap-1.5 md:gap-2">
-              {starters.map((starter) => (
-                <Button
-                  key={starter.id}
-                  variant="outline"
-                  size="sm"
-                  className="h-auto rounded-full px-3 py-1.5 text-xs md:px-4 md:py-2 md:text-sm"
-                  onClick={() => onSend(starter.query)}
-                >
-                  <Sparkles className="mr-1 h-3 w-3 md:mr-1.5 md:h-3.5 md:w-3.5" />
-                  {starter.label}
-                </Button>
-              ))}
-            </div>
+            <>
+              {/* Mobile: horizontal pills */}
+              <div className="flex flex-wrap justify-center gap-1.5 md:hidden">
+                {starters.map((starter) => (
+                  <Button
+                    key={starter.id}
+                    variant="outline"
+                    size="sm"
+                    className="h-auto rounded-full px-3 py-1.5 text-xs"
+                    onClick={() => onSend(starter.query)}
+                  >
+                    <Sparkles className="mr-1 h-3 w-3" />
+                    {starter.label}
+                  </Button>
+                ))}
+              </div>
+              {/* Desktop: 2x2 card grid */}
+              <div className="hidden gap-2 md:grid md:grid-cols-2">
+                {starters.map((starter) => (
+                  <button
+                    key={starter.id}
+                    onClick={() => onSend(starter.query)}
+                    className="flex items-center gap-2 rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  >
+                    <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                    {starter.label}
+                  </button>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-transparent via-background/80 to-transparent px-2 pb-6 pt-4 md:px-4 md:pb-6">
+
+      {/* Mobile only: sticky bottom input */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-transparent via-background/80 to-transparent px-2 pb-6 pt-4 md:hidden">
         <div className="pointer-events-auto mx-auto max-w-xl">
           <ChatInput onSend={onSend} placeholder="ask anything..." />
         </div>
@@ -251,7 +304,7 @@ function ChatView({ sessionId }: { sessionId: string }) {
           />
         </div>
       </div>
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-transparent via-background/80 to-transparent px-2 pb-6 pt-4 md:px-4 md:pb-6">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-transparent via-background/80 to-transparent px-2 pb-6 pt-4 md:px-4 md:pb-6">
         <div className="pointer-events-auto mx-auto max-w-2xl">
           <ChatInput
             onSend={(msg) => sendMutation.mutate(msg)}
@@ -268,7 +321,6 @@ export function ChatPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [historyOpen, setHistoryOpen] = useState(false);
 
   const handleOpenHistory = useCallback(() => setHistoryOpen(true), []);
@@ -300,14 +352,9 @@ export function ChatPage() {
   };
 
   return (
-    <div className="-mx-4 -mt-6 -mb-16 md:-mb-6 flex overflow-hidden h-[calc(100dvh-3.5rem-4rem)] md:h-[calc(100dvh-3.5rem)]">
-      {/* Desktop sidebar */}
-      <div
-        className={cn(
-          "hidden border-r bg-muted/30 transition-all duration-200 md:flex md:flex-col",
-          sidebarOpen ? "w-72" : "w-0 overflow-hidden",
-        )}
-      >
+    <div className="flex overflow-hidden h-[calc(100dvh-3.5rem-4rem)] md:h-[calc(100dvh-3.5rem)]">
+      {/* Desktop sidebar — always visible */}
+      <div className="hidden w-72 border-r bg-muted/30 md:flex md:flex-col">
         <SessionSidebar
           sessionId={sessionId}
           onSelect={handleSelectSession}
@@ -330,26 +377,6 @@ export function ChatPage() {
 
       {/* Main area */}
       <div className="flex min-h-0 flex-1 flex-col">
-        {/* Top bar — desktop only */}
-        <div className="hidden h-12 items-center gap-2 border-b px-3 md:flex">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSidebarOpen((o) => !o)}
-          >
-            {sidebarOpen ? (
-              <PanelLeftClose className="h-5 w-5" />
-            ) : (
-              <PanelLeftOpen className="h-5 w-5" />
-            )}
-          </Button>
-
-          <span className="text-sm font-medium text-muted-foreground">
-            {sessionId ? "Conversation" : "New chat"}
-          </span>
-        </div>
-
-        {/* Content */}
         {sessionId ? (
           <ChatView sessionId={sessionId} />
         ) : (
@@ -364,7 +391,7 @@ export function ChatPage() {
       <button
         type="button"
         onClick={() => setHistoryOpen(true)}
-        className="fixed left-4 top-[4.25rem] z-30 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-transform active:scale-95 md:hidden"
+        className="fixed left-4 top-17 z-30 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-transform active:scale-95 md:hidden"
         aria-label="Chat history"
       >
         <Menu className="h-5 w-5" />
