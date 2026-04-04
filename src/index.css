@@ -133,6 +133,31 @@
   }
 }
 
+/* Auth hero decorative background circles */
+.auth-hero-bg {
+  position: relative;
+}
+.auth-hero-bg::before {
+  content: "";
+  position: absolute;
+  top: -20%;
+  right: -10%;
+  width: 60%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: oklch(1 0 0 / 5%);
+}
+.auth-hero-bg::after {
+  content: "";
+  position: absolute;
+  bottom: -15%;
+  left: -5%;
+  width: 40%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: oklch(1 0 0 / 8%);
+}
+
 /* Bottom nav safe area for notched phones */
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   .bottom-nav-safe {

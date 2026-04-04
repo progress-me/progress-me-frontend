@@ -1,3 +1,4 @@
+import { AuthLayout } from "@/components/auth/AuthLayout";
 import { useAuth } from "@/context/AuthContext";
 import { isAxiosError } from "axios";
 import { useState, type FormEvent } from "react";
@@ -41,10 +42,10 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <Card className="w-full max-w-sm">
+    <AuthLayout>
+      <Card>
         <CardHeader>
-          <CardTitle>Login</CardTitle>
+          <CardTitle className="font-display text-2xl">Welcome back</CardTitle>
           <CardDescription>Sign in to your account</CardDescription>
         </CardHeader>
         <CardContent>
@@ -75,7 +76,7 @@ export function LoginPage() {
               {loading ? "Signing in..." : "Sign in"}
             </Button>
             <p className="text-center text-sm text-muted-foreground">
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
               <Link to="/register" className="text-primary underline">
                 Register
               </Link>
@@ -83,6 +84,6 @@ export function LoginPage() {
           </form>
         </CardContent>
       </Card>
-    </div>
+    </AuthLayout>
   );
 }

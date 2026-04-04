@@ -1,3 +1,4 @@
+import { AuthLayout } from "@/components/auth/AuthLayout";
 import { useAuth } from "@/context/AuthContext";
 import { isAxiosError } from "axios";
 import { useState, type FormEvent } from "react";
@@ -49,11 +50,13 @@ export function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <Card className="w-full max-w-sm">
+    <AuthLayout>
+      <Card>
         <CardHeader>
-          <CardTitle>Register</CardTitle>
-          <CardDescription>Create a new account</CardDescription>
+          <CardTitle className="font-display text-2xl">Get started</CardTitle>
+          <CardDescription>
+            Create your account to begin tracking your growth
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -102,6 +105,6 @@ export function RegisterPage() {
           </form>
         </CardContent>
       </Card>
-    </div>
+    </AuthLayout>
   );
 }
