@@ -12,10 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/context/AuthContext";
-import type { UpdatePersonaRequest } from "@/types/api";
+import type { PersonaResponse, UpdatePersonaRequest } from "@/types/api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, LogOut, Pencil, X } from "lucide-react";
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
 const personaFields = [
@@ -43,22 +43,6 @@ export function PersonaPage() {
     queryFn: getPersona,
   });
 
-  const [form, setForm] = useState<UpdatePersonaRequest>({});
-
-  useEffect(() => {
-    if (persona) {
-      setForm({
-        displayName: persona.displayName ?? "",
-        age: persona.age,
-        bio: persona.bio ?? "",
-        strengths: persona.strengths ?? "",
-        weaknesses: persona.weaknesses ?? "",
-        interests: persona.interests ?? "",
-        context: persona.context ?? "",
-      });
-    }
-  }, [persona]);
-
   const mutation = useMutation({
     mutationFn: updatePersona,
     onSuccess: () => {
@@ -68,26 +52,6 @@ export function PersonaPage() {
     },
     onError: () => toast.error("Failed to update profile"),
   });
-
-  function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    mutation.mutate(form);
-  }
-
-  function handleCancel() {
-    if (persona) {
-      setForm({
-        displayName: persona.displayName ?? "",
-        age: persona.age,
-        bio: persona.bio ?? "",
-        strengths: persona.strengths ?? "",
-        weaknesses: persona.weaknesses ?? "",
-        interests: persona.interests ?? "",
-        context: persona.context ?? "",
-      });
-    }
-    setIsEditing(false);
-  }
 
   if (isLoading) return <p className="text-muted-foreground">Loading...</p>;
 
@@ -145,80 +109,23 @@ export function PersonaPage() {
             </Button>
           )}
           {isEditing && (
-            <Button variant="ghost" size="icon" onClick={handleCancel}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsEditing(false)}
+            >
               <X className="h-4 w-4" />
             </Button>
           )}
         </CardHeader>
         <CardContent>
-          {isEditing ? (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="displayName">Display Name</Label>
-                  <Input
-                    id="displayName"
-                    value={form.displayName ?? ""}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, displayName: e.target.value }))
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="age">Age</Label>
-                  <Input
-                    id="age"
-                    type="number"
-                    min={1}
-                    max={150}
-                    value={form.age ?? ""}
-                    onChange={(e) =>
-                      setForm((f) => ({
-                        ...f,
-                        age: e.target.value ? Number(e.target.value) : null,
-                      }))
-                    }
-                  />
-                </div>
-              </div>
-
-              {personaFields
-                .filter((f) => f.type === "textarea")
-                .map(({ key, label, rows }) => (
-                  <div key={key} className="space-y-2">
-                    <Label htmlFor={key}>{label}</Label>
-                    <Textarea
-                      id={key}
-                      rows={rows}
-                      value={
-                        (form[key as keyof UpdatePersonaRequest] as string) ??
-                        ""
-                      }
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, [key]: e.target.value }))
-                      }
-                    />
-                  </div>
-                ))}
-
-              <div className="flex gap-2">
-                <Button
-                  type="submit"
-                  className="flex-1"
-                  disabled={mutation.isPending}
-                >
-                  {mutation.isPending ? "Saving..." : "Save"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleCancel}
-                  disabled={mutation.isPending}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </form>
+          {isEditing && persona ? (
+            <PersonaEditForm
+              persona={persona}
+              onSubmit={(form) => mutation.mutate(form)}
+              onCancel={() => setIsEditing(false)}
+              isPending={mutation.isPending}
+            />
           ) : (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -269,5 +176,95 @@ export function PersonaPage() {
       {/* AI Settings */}
       <AiSettingsPage />
     </div>
+  );
+}
+
+function PersonaEditForm({
+  persona,
+  onSubmit,
+  onCancel,
+  isPending,
+}: {
+  persona: PersonaResponse;
+  onSubmit: (form: UpdatePersonaRequest) => void;
+  onCancel: () => void;
+  isPending: boolean;
+}) {
+  const [form, setForm] = useState<UpdatePersonaRequest>({
+    displayName: persona.displayName ?? "",
+    age: persona.age,
+    bio: persona.bio ?? "",
+    strengths: persona.strengths ?? "",
+    weaknesses: persona.weaknesses ?? "",
+    interests: persona.interests ?? "",
+    context: persona.context ?? "",
+  });
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    onSubmit(form);
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="displayName">Display Name</Label>
+          <Input
+            id="displayName"
+            value={form.displayName ?? ""}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, displayName: e.target.value }))
+            }
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="age">Age</Label>
+          <Input
+            id="age"
+            type="number"
+            min={1}
+            max={150}
+            value={form.age ?? ""}
+            onChange={(e) =>
+              setForm((f) => ({
+                ...f,
+                age: e.target.value ? Number(e.target.value) : null,
+              }))
+            }
+          />
+        </div>
+      </div>
+
+      {personaFields
+        .filter((f) => f.type === "textarea")
+        .map(({ key, label, rows }) => (
+          <div key={key} className="space-y-2">
+            <Label htmlFor={key}>{label}</Label>
+            <Textarea
+              id={key}
+              rows={rows}
+              value={(form[key as keyof UpdatePersonaRequest] as string) ?? ""}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, [key]: e.target.value }))
+              }
+            />
+          </div>
+        ))}
+
+      <div className="flex gap-2">
+        <Button type="submit" className="flex-1" disabled={isPending}>
+          {isPending ? "Saving..." : "Save"}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={isPending}
+        >
+          Cancel
+        </Button>
+      </div>
+    </form>
   );
 }

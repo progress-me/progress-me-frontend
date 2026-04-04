@@ -9,9 +9,10 @@ import {
 } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import type { AiSettingsResponse } from "@/types/api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BarChart3, Heart, Save, Scale, Settings2, Target } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 const TONES = [
@@ -42,10 +43,6 @@ const TONES = [
 ];
 
 export function AiSettingsPage() {
-  const queryClient = useQueryClient();
-  const [tone, setTone] = useState("balanced");
-  const [customInstructions, setCustomInstructions] = useState("");
-
   const {
     data: settings,
     isLoading,
@@ -55,15 +52,35 @@ export function AiSettingsPage() {
     queryFn: getAiSettings,
   });
 
-  useEffect(() => {
-    if (settings) {
-      setTone(settings.tone);
-      setCustomInstructions(settings.customInstructions ?? "");
-    }
-  }, [settings]);
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <p className="py-10 text-center text-muted-foreground">
+        Failed to load AI settings. Please refresh.
+      </p>
+    );
+  }
+
+  if (!settings) return null;
+
+  return <AiSettingsForm settings={settings} />;
+}
+
+function AiSettingsForm({ settings }: { settings: AiSettingsResponse }) {
+  const queryClient = useQueryClient();
+  const [tone, setTone] = useState(settings.tone);
+  const [customInstructions, setCustomInstructions] = useState(
+    settings.customInstructions ?? "",
+  );
 
   const isDirty = useMemo(() => {
-    if (!settings) return false;
     return (
       tone !== settings.tone ||
       customInstructions !== (settings.customInstructions ?? "")
@@ -87,22 +104,6 @@ export function AiSettingsPage() {
       customInstructions: customInstructions || null,
     });
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <p className="py-10 text-center text-muted-foreground">
-        Failed to load AI settings. Please refresh.
-      </p>
-    );
-  }
 
   return (
     <div className="space-y-6">

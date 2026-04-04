@@ -10,7 +10,7 @@ const mockLocalStorage = {
   get length() {
     return store.size;
   },
-  key: (_index: number) => null,
+  key: () => null,
 };
 
 Object.defineProperty(globalThis, "localStorage", {

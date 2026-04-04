@@ -1,11 +1,8 @@
 import { listCategories } from "@/api/categories";
 import { listGoals } from "@/api/goals";
 import { createLogEntry, listLogEntries } from "@/api/log-entries";
-import {
-  ENERGY_SCALE,
-  MOOD_SCALE,
-  ScaleSelector,
-} from "@/components/ScaleSelector";
+import { ENERGY_SCALE, MOOD_SCALE } from "@/components/scale-data";
+import { ScaleSelector } from "@/components/ScaleSelector";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -74,7 +71,8 @@ export function NewEntryPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Carry forward mood/energy from today's last entry
+  // Carry forward mood/energy from today's last entry (one-time init from async data)
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (
       todayEntries &&
@@ -90,6 +88,7 @@ export function NewEntryPage() {
     }
   }, [todayEntries]);
 
+  // Select default goal once goals load (one-time init from async data)
   useEffect(() => {
     if (goals && !goalsInitialized.current) {
       goalsInitialized.current = true;
@@ -99,6 +98,7 @@ export function NewEntryPage() {
       }
     }
   }, [goals]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const effectiveGoalIds = useMemo(() => {
     const ids = new Set(selectedGoalIds);
