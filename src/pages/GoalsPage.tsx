@@ -4,9 +4,16 @@ import { GoalCard } from "@/components/GoalCard";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, Plus } from "lucide-react";
+import { Loader2, Plus, Target } from "lucide-react";
 import { useState } from "react";
 import { CategoriesPage } from "./CategoriesPage";
+
+const filterLabels: Record<string, string> = {
+  all: "goals",
+  active: "active goals",
+  completed: "completed goals",
+  paused: "paused goals",
+};
 
 function GoalsContent({
   showCreate,
@@ -31,7 +38,7 @@ function GoalsContent({
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <Tabs value={statusFilter} onValueChange={setStatusFilter}>
         <TabsList>
           <TabsTrigger value="all">All</TabsTrigger>
@@ -41,11 +48,14 @@ function GoalsContent({
         </TabsList>
       </Tabs>
 
-      {isLoading && <p className="text-muted-foreground">Loading...</p>}
+      {isLoading && (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      )}
 
       {isError && (
-        <div className="flex items-center gap-2 rounded-md border border-destructive p-4 text-destructive">
-          <AlertCircle className="h-5 w-5" />
+        <div className="flex items-center justify-center gap-3 rounded-lg border border-destructive/50 p-6 text-destructive">
           <span>Failed to load goals.</span>
           <Button variant="outline" size="sm" onClick={() => refetch()}>
             Retry
@@ -54,9 +64,27 @@ function GoalsContent({
       )}
 
       {!isLoading && !isError && goals?.length === 0 && (
-        <p className="text-muted-foreground">
-          No goals yet. Create your first one!
-        </p>
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-16 text-center">
+          <div className="mb-4 rounded-full bg-muted p-3">
+            <Target className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <h3 className="text-lg font-semibold">
+            {statusFilter === "all"
+              ? "No goals yet"
+              : `No ${filterLabels[statusFilter]}`}
+          </h3>
+          <p className="mt-1.5 max-w-xs text-sm text-muted-foreground">
+            {statusFilter === "all"
+              ? "Goals help you stay focused and measure your personal growth."
+              : `You don't have any ${filterLabels[statusFilter]} right now.`}
+          </p>
+          {statusFilter === "all" && (
+            <Button className="mt-5" onClick={() => setShowCreate(true)}>
+              <Plus className="mr-1.5 h-4 w-4" />
+              Create your first goal
+            </Button>
+          )}
+        </div>
       )}
 
       <div className="space-y-3">
@@ -78,9 +106,16 @@ export function GoalsPage() {
   return (
     <div className="space-y-6">
       <div className="hidden items-center justify-between md:flex">
-        <h1 className="text-2xl font-bold">
-          {activeTab === "goals" ? "Goals" : "Categories"}
-        </h1>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {activeTab === "goals" ? "Goals" : "Focus Areas"}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {activeTab === "goals"
+              ? "Track what matters to you and measure your growth."
+              : "Organize your goals and entries by focus area."}
+          </p>
+        </div>
         {activeTab === "goals" ? (
           <Button onClick={() => setShowCreateGoal(true)}>
             <Plus className="mr-1.5 h-4 w-4" />
@@ -89,7 +124,7 @@ export function GoalsPage() {
         ) : (
           <Button onClick={() => setShowCreateCategory(true)}>
             <Plus className="mr-1.5 h-4 w-4" />
-            New Category
+            New Focus Area
           </Button>
         )}
       </div>
@@ -98,7 +133,7 @@ export function GoalsPage() {
         <div className="flex items-center justify-between">
           <TabsList>
             <TabsTrigger value="goals">Goals</TabsTrigger>
-            <TabsTrigger value="values">Categories</TabsTrigger>
+            <TabsTrigger value="values">Focus Areas</TabsTrigger>
           </TabsList>
           {activeTab === "goals" ? (
             <Button
@@ -114,7 +149,7 @@ export function GoalsPage() {
               className="md:hidden"
             >
               <Plus className="mr-1.5 h-4 w-4" />
-              New Category
+              New Focus Area
             </Button>
           )}
         </div>

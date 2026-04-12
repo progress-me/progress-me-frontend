@@ -281,12 +281,12 @@ function DashboardContent() {
 
             <Card>
               <CardHeader className="pb-2">
-                <h3 className="font-semibold">Top Categories</h3>
+                <h3 className="font-semibold">Top Focus Areas</h3>
               </CardHeader>
               <CardContent className="space-y-2">
                 {data.topCategories.length === 0 && (
                   <p className="text-sm text-muted-foreground">
-                    No categorized entries yet.
+                    No entries with focus areas yet.
                   </p>
                 )}
                 {data.topCategories.map((c) => (

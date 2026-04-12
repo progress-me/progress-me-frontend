@@ -5,12 +5,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { smartPlaceholders } from "@/lib/goal-utils";
 import type { GoalResponse } from "@/types/api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -40,6 +42,7 @@ export function EditGoalDialog({
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Goal</DialogTitle>
+          <DialogDescription>Update your goal details.</DialogDescription>
         </DialogHeader>
         {open && <EditGoalForm goal={goal} onOpenChange={onOpenChange} />}
       </DialogContent>
@@ -126,13 +129,14 @@ function EditGoalForm({
           id="edit-goal-desc"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          placeholder="What do you want to achieve and why?"
           rows={2}
         />
       </div>
 
       {categories && categories.length > 0 && (
         <div className="space-y-2">
-          <Label>Categories</Label>
+          <Label>Focus Areas</Label>
           <div className="space-y-2 rounded-md border p-3">
             {categories.map((cat) => (
               <div key={cat.id} className="flex items-center gap-2">
@@ -159,36 +163,47 @@ function EditGoalForm({
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="edit-goal-start">Start Date</Label>
-          <Input
-            id="edit-goal-start"
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-          />
+      <div className="space-y-2">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="edit-goal-start">Start Date</Label>
+            <Input
+              id="edit-goal-start"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-goal-target">Target Date</Label>
+            <Input
+              id="edit-goal-target"
+              type="date"
+              value={targetDate}
+              onChange={(e) => setTargetDate(e.target.value)}
+            />
+          </div>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="edit-goal-target">Target Date</Label>
-          <Input
-            id="edit-goal-target"
-            type="date"
-            value={targetDate}
-            onChange={(e) => setTargetDate(e.target.value)}
-          />
-        </div>
+        <p className="text-xs text-muted-foreground">
+          Optional. Setting dates helps you track progress over time.
+        </p>
       </div>
 
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="edit-use-smart"
-          checked={useSmart}
-          onChange={(e) => setUseSmart(e.target.checked)}
-          className="h-4 w-4"
-        />
-        <Label htmlFor="edit-use-smart">Use SMART template</Label>
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="edit-use-smart"
+            checked={useSmart}
+            onCheckedChange={(checked) => setUseSmart(checked === true)}
+          />
+          <Label htmlFor="edit-use-smart">Use SMART template</Label>
+        </div>
+        {!useSmart && (
+          <p className="text-xs text-muted-foreground">
+            The SMART framework helps you define goals that are Specific,
+            Measurable, Achievable, Relevant, and Time-bound.
+          </p>
+        )}
       </div>
 
       {useSmart && (
@@ -211,6 +226,7 @@ function EditGoalForm({
                 onChange={(e) =>
                   setSmart({ ...smart, [field]: e.target.value })
                 }
+                placeholder={smartPlaceholders[field]}
                 rows={1}
               />
             </div>

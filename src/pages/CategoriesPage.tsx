@@ -3,7 +3,7 @@ import { CategoryCard } from "@/components/CategoryCard";
 import { CreateCategoryDialog } from "@/components/CreateCategoryDialog";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle } from "lucide-react";
+import { Loader2, Palette, Plus } from "lucide-react";
 
 export function CategoriesPage({
   showCreate,
@@ -23,13 +23,16 @@ export function CategoriesPage({
   });
 
   return (
-    <div className="space-y-6">
-      {isLoading && <p className="text-muted-foreground">Loading...</p>}
+    <div className="space-y-5">
+      {isLoading && (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      )}
 
       {isError && (
-        <div className="flex items-center gap-2 rounded-md border border-destructive p-4 text-destructive">
-          <AlertCircle className="h-5 w-5" />
-          <span>Failed to load categories.</span>
+        <div className="flex items-center justify-center gap-3 rounded-lg border border-destructive/50 p-6 text-destructive">
+          <span>Failed to load focus areas.</span>
           <Button variant="outline" size="sm" onClick={() => refetch()}>
             Retry
           </Button>
@@ -37,14 +40,27 @@ export function CategoriesPage({
       )}
 
       {!isLoading && !isError && categories?.length === 0 && (
-        <p className="text-muted-foreground">
-          No categories yet. Create your first one to organize your entries!
-        </p>
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-16 text-center">
+          <div className="mb-4 rounded-full bg-muted p-3">
+            <Palette className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <h3 className="text-lg font-semibold">No focus areas yet</h3>
+          <p className="mt-1.5 max-w-xs text-sm text-muted-foreground">
+            Focus areas help you organize goals and entries by topic, like
+            Health, Career, or Learning.
+          </p>
+          <Button className="mt-5" onClick={() => setShowCreate(true)}>
+            <Plus className="mr-1.5 h-4 w-4" />
+            Create your first focus area
+          </Button>
+        </div>
       )}
 
-      {categories?.map((cat) => (
-        <CategoryCard key={cat.id} category={cat} />
-      ))}
+      <div className="grid gap-3 sm:grid-cols-2">
+        {categories?.map((cat) => (
+          <CategoryCard key={cat.id} category={cat} />
+        ))}
+      </div>
 
       <CreateCategoryDialog open={showCreate} onOpenChange={setShowCreate} />
     </div>

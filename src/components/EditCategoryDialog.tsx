@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -40,7 +41,8 @@ export function EditCategoryDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit Category</DialogTitle>
+          <DialogTitle>Edit Focus Area</DialogTitle>
+          <DialogDescription>Update focus area details.</DialogDescription>
         </DialogHeader>
         {open && (
           <EditCategoryForm category={category} onOpenChange={onOpenChange} />

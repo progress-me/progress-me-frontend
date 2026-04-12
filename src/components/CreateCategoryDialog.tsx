@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -55,7 +56,10 @@ export function CreateCategoryDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>New Category</DialogTitle>
+          <DialogTitle>New Focus Area</DialogTitle>
+          <DialogDescription>
+            Group related goals and entries under a shared topic.
+          </DialogDescription>
         </DialogHeader>
         <form
           onSubmit={(e) => {

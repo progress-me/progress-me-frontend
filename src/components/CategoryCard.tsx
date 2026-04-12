@@ -1,6 +1,5 @@
 import { deleteCategory } from "@/api/categories";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import type { CategoryResponse } from "@/types/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Trash2 } from "lucide-react";
@@ -26,36 +25,51 @@ export function CategoryCard({ category }: CategoryCardProps) {
     onError: () => toast.error("Failed to delete category"),
   });
 
+  const color = category.color ?? "#607D8B";
+
   return (
     <>
-      <Card>
-        <div
-          className="h-1 rounded-t-lg"
-          style={{ backgroundColor: category.color ?? "#607D8B" }}
-        />
-        <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2">
-          <h3 className="font-semibold">{category.name}</h3>
-          <div className="ml-auto flex gap-1">
-            <Button variant="ghost" size="sm" onClick={() => setShowEdit(true)}>
-              <Pencil className="h-3 w-3" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowDelete(true)}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
+      <div
+        className="group relative overflow-hidden rounded-xl border bg-card transition-all hover:shadow-md"
+        style={{ borderLeftWidth: "3px", borderLeftColor: color }}
+      >
+        <div className="p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="mb-1 flex items-center gap-2">
+                <span
+                  className="inline-block h-3 w-3 rounded-full"
+                  style={{ backgroundColor: color }}
+                />
+                <h3 className="text-base font-semibold">{category.name}</h3>
+              </div>
+              {category.description && (
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  {category.description}
+                </p>
+              )}
+            </div>
+            <div className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                onClick={() => setShowEdit(true)}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                onClick={() => setShowDelete(true)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           </div>
-        </CardHeader>
-        {category.description && (
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              {category.description}
-            </p>
-          </CardContent>
-        )}
-      </Card>
+        </div>
+      </div>
 
       <EditCategoryDialog
         open={showEdit}
@@ -66,7 +80,7 @@ export function CategoryCard({ category }: CategoryCardProps) {
         open={showDelete}
         onOpenChange={setShowDelete}
         onConfirm={() => deleteCatMutation.mutate()}
-        title="Delete Category"
+        title="Delete Focus Area"
         description={`Delete "${category.name}"? This cannot be undone.`}
       />
     </>
