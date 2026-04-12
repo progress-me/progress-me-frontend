@@ -252,10 +252,16 @@ export interface ChatSessionResponse {
   updatedAt: string;
 }
 
+export type ActionType = "DAILY_NOTE" | "GOAL_MANAGEMENT";
+export type ActionStatus = "PROPOSED" | "CONFIRMED" | "REJECTED" | "EXECUTED";
+
 export interface ChatMessageResponse {
   id: string;
   role: "USER" | "ASSISTANT";
   content: string;
+  actionType: ActionType | null;
+  actionPayload: Record<string, unknown> | null;
+  actionStatus: ActionStatus | null;
   createdAt: string;
 }
 

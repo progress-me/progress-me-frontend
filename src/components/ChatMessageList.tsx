@@ -6,11 +6,13 @@ import { ChatMessageBubble } from "./ChatMessageBubble";
 interface ChatMessageListProps {
   messages: ChatMessageResponse[];
   isPending?: boolean;
+  onSendMessage?: (message: string) => void;
 }
 
 export function ChatMessageList({
   messages,
   isPending = false,
+  onSendMessage,
 }: ChatMessageListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const prevCountRef = useRef(messages.length);
@@ -60,7 +62,7 @@ export function ChatMessageList({
     <div ref={containerRef} className="flex flex-col gap-4">
       {messages.map((message, index) => (
         <div key={message.id} data-message-index={index}>
-          <ChatMessageBubble message={message} />
+          <ChatMessageBubble message={message} onSendMessage={onSendMessage} />
         </div>
       ))}
       {isPending && (

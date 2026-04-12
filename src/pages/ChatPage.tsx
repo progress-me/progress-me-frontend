@@ -16,7 +16,16 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { Loader2, Menu, MessageCircle, Plus, Sparkles } from "lucide-react";
+import {
+  BookOpen,
+  Loader2,
+  Menu,
+  MessageCircle,
+  Plus,
+  Sparkles,
+  Target,
+  TrendingUp,
+} from "lucide-react";
 import { useCallback, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -115,9 +124,11 @@ function SessionSidebar({
 function StartersView({
   onSend,
   isPending,
+  pendingMessage,
 }: {
   onSend: (message: string) => void;
   isPending: boolean;
+  pendingMessage: string | null;
 }) {
   const { data: starters } = useQuery({
     queryKey: ["chat-starters"],
@@ -125,14 +136,34 @@ function StartersView({
     staleTime: Number.POSITIVE_INFINITY,
   });
 
-  if (isPending) {
+  if (isPending && pendingMessage) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-4">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="text-lg font-medium">Starting conversation...</p>
-        <p className="text-sm text-muted-foreground">
-          This may take a few seconds
-        </p>
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-24 pt-3 md:px-4 md:pb-24 md:pt-4">
+          <div className="mx-auto max-w-2xl space-y-3">
+            {/* User's message */}
+            <div className="flex justify-end">
+              <div className="max-w-[85%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-primary-foreground">
+                <p className="whitespace-pre-wrap text-sm">{pendingMessage}</p>
+              </div>
+            </div>
+            {/* Typing indicator */}
+            <div className="flex items-start gap-2">
+              <div className="rounded-2xl rounded-bl-md bg-muted px-4 py-3">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-transparent via-background/80 to-transparent px-2 pb-6 pt-4 md:px-4 md:pb-6">
+          <div className="pointer-events-auto mx-auto max-w-2xl">
+            <ChatInput
+              onSend={onSend}
+              disabled
+              placeholder="Starting conversation..."
+            />
+          </div>
+        </div>
       </div>
     );
   }
@@ -151,6 +182,22 @@ function StartersView({
             <p className="mt-1.5 text-xs text-muted-foreground md:mt-2 md:text-sm">
               I have access to your persona, values, goals, and recent entries
             </p>
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-2">
+            {[
+              { icon: BookOpen, label: "Create or update notes" },
+              { icon: Target, label: "Set and manage goals" },
+              { icon: TrendingUp, label: "Analyze your progress" },
+            ].map((feature) => (
+              <div
+                key={feature.label}
+                className="flex items-center gap-1.5 rounded-full border border-border/50 bg-muted/20 px-3 py-1.5 text-xs text-muted-foreground"
+              >
+                <feature.icon className="h-3 w-3" />
+                {feature.label}
+              </div>
+            ))}
           </div>
 
           {/* Desktop: centered input */}
@@ -232,6 +279,9 @@ function ChatView({ sessionId }: { sessionId: string }) {
             id: `optimistic-${Date.now()}`,
             role: "USER",
             content: message,
+            actionType: null,
+            actionPayload: null,
+            actionStatus: null,
             createdAt: new Date().toISOString(),
           };
           return {
@@ -262,6 +312,14 @@ function ChatView({ sessionId }: { sessionId: string }) {
         },
       );
       queryClient.invalidateQueries({ queryKey: ["chat-sessions"] });
+      // Refetch messages to get updated actionStatus on original proposals
+      queryClient.invalidateQueries({ queryKey: ["chat-messages", sessionId] });
+      // The EXECUTED status is set on the original proposal message (not the response),
+      // so invalidate related queries whenever the conversation involves actions
+      if (assistantMessage.actionType) {
+        queryClient.invalidateQueries({ queryKey: ["goals"] });
+        queryClient.invalidateQueries({ queryKey: ["log-entries"] });
+      }
     },
     onError: (_error, _message, context) => {
       if (context?.previous) {
@@ -301,6 +359,7 @@ function ChatView({ sessionId }: { sessionId: string }) {
           <ChatMessageList
             messages={messages}
             isPending={sendMutation.isPending}
+            onSendMessage={(msg) => sendMutation.mutate(msg)}
           />
         </div>
       </div>
@@ -347,7 +406,10 @@ export function ChatPage() {
     setHistoryOpen(false);
   };
 
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+
   const handleSend = (message: string) => {
+    setPendingMessage(message);
     createMutation.mutate({ message });
   };
 
@@ -383,6 +445,7 @@ export function ChatPage() {
           <StartersView
             onSend={handleSend}
             isPending={createMutation.isPending}
+            pendingMessage={pendingMessage}
           />
         )}
       </div>
