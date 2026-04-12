@@ -3,13 +3,11 @@ import { listGoals } from "@/api/goals";
 import { createLogEntry, listLogEntries } from "@/api/log-entries";
 import { ENERGY_SCALE, MOOD_SCALE } from "@/components/scale-data";
 import { ScaleSelector } from "@/components/ScaleSelector";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { computeCategoryTagGroups } from "@/lib/entry-utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -37,8 +35,6 @@ export function NewEntryPage() {
   const [energy, setEnergy] = useState(6);
   const [selectedGoalIds, setSelectedGoalIds] = useState<string[]>([]);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-  const [isTagsOpen, setIsTagsOpen] = useState(false);
   const goalsInitialized = useRef(false);
   const moodEnergyInitialized = useRef(false);
   const userTouchedMoodEnergy = useRef(false);
@@ -112,24 +108,6 @@ export function NewEntryPage() {
     return [...ids];
   }, [selectedGoalIds, selectedCategoryIds, goals]);
 
-  const tagGroups = useMemo(
-    () =>
-      computeCategoryTagGroups(
-        selectedCategoryIds,
-        effectiveGoalIds,
-        goals ?? [],
-        categories ?? [],
-      ),
-    [selectedCategoryIds, effectiveGoalIds, goals, categories],
-  );
-
-  const validSelectedTags = useMemo(() => {
-    const availableIds = new Set(
-      tagGroups.flatMap((g) => g.values.map((v) => v.id)),
-    );
-    return selectedTagIds.filter((id) => availableIds.has(id));
-  }, [tagGroups, selectedTagIds]);
-
   const mutation = useMutation({
     mutationFn: createLogEntry,
     onSuccess: () => {
@@ -168,12 +146,6 @@ export function NewEntryPage() {
     );
   }
 
-  function toggleTag(id: string) {
-    setSelectedTagIds((prev) =>
-      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id],
-    );
-  }
-
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     mutation.mutate({
@@ -182,7 +154,8 @@ export function NewEntryPage() {
       mood,
       energy,
       goalIds: effectiveGoalIds.length > 0 ? effectiveGoalIds : undefined,
-      tagValueIds: validSelectedTags.length > 0 ? validSelectedTags : undefined,
+      categoryIds:
+        selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
     });
   }
 
@@ -194,10 +167,6 @@ export function NewEntryPage() {
 
   const nonDefaultGoals = goals?.filter((g) => !g.isDefault) ?? [];
   const defaultGoal = goals?.find((g) => g.isDefault);
-  const totalAvailableTags = tagGroups.reduce(
-    (sum, g) => sum + g.values.length,
-    0,
-  );
 
   return (
     <div className="mx-auto max-w-2xl py-2">
@@ -342,75 +311,6 @@ export function NewEntryPage() {
                     );
                   })}
                 </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Tags — collapsible */}
-        {tagGroups.length > 0 && (
-          <div className="rounded-2xl bg-muted/15 ring-1 ring-border/25">
-            <button
-              type="button"
-              onClick={() => setIsTagsOpen((prev) => !prev)}
-              className="flex w-full items-center justify-between px-5 py-4"
-            >
-              <div className="flex items-center gap-2">
-                <SectionLabel>Values</SectionLabel>
-                {totalAvailableTags > 0 && (
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                    {totalAvailableTags}
-                  </span>
-                )}
-              </div>
-              <ChevronDown
-                className="h-4 w-4 text-muted-foreground transition-transform duration-200"
-                style={{
-                  transform: isTagsOpen ? "rotate(180deg)" : "rotate(0deg)",
-                }}
-              />
-            </button>
-
-            {isTagsOpen && (
-              <div className="space-y-4 px-5 pb-5">
-                {tagGroups.map((group) => (
-                  <div key={group.categoryId} className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      {group.categoryColor && (
-                        <span
-                          className="h-1.5 w-1.5 rounded-full"
-                          style={{ backgroundColor: group.categoryColor }}
-                        />
-                      )}
-                      <span className="text-xs font-medium text-muted-foreground">
-                        {group.categoryName}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {group.values.map((v) => {
-                        const isSelected = validSelectedTags.includes(v.id);
-                        return (
-                          <Badge
-                            key={v.id}
-                            variant={isSelected ? "default" : "outline"}
-                            className="cursor-pointer transition-all hover:shadow-sm"
-                            onClick={() => toggleTag(v.id)}
-                            style={
-                              isSelected && group.categoryColor
-                                ? {
-                                    backgroundColor: group.categoryColor,
-                                    borderColor: group.categoryColor,
-                                  }
-                                : undefined
-                            }
-                          >
-                            {v.name}
-                          </Badge>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
               </div>
             )}
           </div>

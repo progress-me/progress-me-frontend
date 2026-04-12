@@ -38,7 +38,7 @@ export function CategoriesPage({
 
       {!isLoading && !isError && categories?.length === 0 && (
         <p className="text-muted-foreground">
-          No categories yet. Create your first one to organize your values!
+          No categories yet. Create your first one to organize your entries!
         </p>
       )}
 

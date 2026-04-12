@@ -26,7 +26,7 @@ export interface CreateLogEntryRequest {
   energy?: number | null;
   loggedAt?: string | null;
   goalIds?: string[];
-  tagValueIds?: string[];
+  categoryIds?: string[];
 }
 
 export interface UpdateLogEntryRequest {
@@ -35,7 +35,7 @@ export interface UpdateLogEntryRequest {
   energy?: number | null;
   loggedAt?: string | null;
   goalIds?: string[];
-  tagValueIds?: string[];
+  categoryIds?: string[];
 }
 
 export interface GoalInfo {
@@ -52,7 +52,7 @@ export interface LogEntryResponse {
   content: string;
   mood: number | null;
   energy: number | null;
-  tags: TagResponse[];
+  categories: EntryCategory[];
   loggedAt: string;
   createdAt: string;
   updatedAt: string;
@@ -96,16 +96,7 @@ export interface ApiError {
   errors?: Record<string, string>;
 }
 
-// --- Categories & Values ---
-
-export interface ValueResponse {
-  id: string;
-  categoryId: string;
-  name: string;
-  description: string | null;
-  sortOrder: number;
-  createdAt: string;
-}
+// --- Categories ---
 
 export interface CategoryResponse {
   id: string;
@@ -114,8 +105,13 @@ export interface CategoryResponse {
   color: string | null;
   icon: string | null;
   sortOrder: number;
-  values: ValueResponse[];
   createdAt: string;
+}
+
+export interface EntryCategory {
+  id: string;
+  name: string;
+  color: string | null;
 }
 
 export interface CreateCategoryRequest {
@@ -123,11 +119,6 @@ export interface CreateCategoryRequest {
   description?: string | null;
   color?: string | null;
   icon?: string | null;
-}
-
-export interface CreateValueRequest {
-  name: string;
-  description?: string | null;
 }
 
 // --- Goals ---
@@ -184,22 +175,8 @@ export interface UpdateCategoryRequest {
   icon?: string | null;
 }
 
-export interface UpdateValueRequest {
-  name?: string | null;
-  description?: string | null;
-}
-
 export interface UpdateGoalStatusRequest {
   status: GoalStatus;
-}
-
-// --- Entry Tags ---
-
-export interface TagResponse {
-  id: string;
-  name: string;
-  categoryName: string;
-  categoryColor: string | null;
 }
 
 // --- Dashboard ---
@@ -211,7 +188,7 @@ export interface DashboardResponse {
   energyTrend: MetricTrend;
   goalSummary: GoalSummary;
   streak: StreakInfo;
-  topValues: TopValueInfo[];
+  topCategories: TopCategoryInfo[];
 }
 
 export interface PeriodInfo {
@@ -259,11 +236,10 @@ export interface StreakInfo {
   longest: number;
 }
 
-export interface TopValueInfo {
+export interface TopCategoryInfo {
   id: string;
   name: string;
-  categoryName: string;
-  categoryColor: string | null;
+  color: string | null;
   count: number;
 }
 

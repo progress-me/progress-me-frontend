@@ -3,7 +3,6 @@ import { listGoals } from "@/api/goals";
 import { updateLogEntry } from "@/api/log-entries";
 import { ENERGY_SCALE, MOOD_SCALE } from "@/components/scale-data";
 import { ScaleSelector } from "@/components/ScaleSelector";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,7 +12,6 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { computeCategoryTagGroups } from "@/lib/entry-utils";
 import type {
   CategoryResponse,
   GoalResponse,
@@ -111,16 +109,7 @@ function EditEntryForm({
     entry.goals?.map((g) => g.id) ?? [],
   );
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(
-    () => {
-      const tagIds = new Set(entry.tags?.map((t) => t.id) ?? []);
-      if (tagIds.size === 0) return [];
-      return categories
-        .filter((cat) => cat.values.some((v) => tagIds.has(v.id)))
-        .map((c) => c.id);
-    },
-  );
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(
-    entry.tags?.map((t) => t.id) ?? [],
+    entry.categories?.map((c) => c.id) ?? [],
   );
 
   const effectiveGoalIds = useMemo(() => {
@@ -135,24 +124,6 @@ function EditEntryForm({
     return [...ids];
   }, [selectedGoalIds, selectedCategoryIds, goals]);
 
-  const tagGroups = useMemo(
-    () =>
-      computeCategoryTagGroups(
-        selectedCategoryIds,
-        effectiveGoalIds,
-        goals ?? [],
-        categories ?? [],
-      ),
-    [selectedCategoryIds, effectiveGoalIds, goals, categories],
-  );
-
-  const validSelectedTags = useMemo(() => {
-    const availableIds = new Set(
-      tagGroups.flatMap((g) => g.values.map((v) => v.id)),
-    );
-    return selectedTagIds.filter((id) => availableIds.has(id));
-  }, [tagGroups, selectedTagIds]);
-
   const mutation = useMutation({
     mutationFn: () =>
       updateLogEntry(entry.id, {
@@ -160,8 +131,8 @@ function EditEntryForm({
         mood,
         energy,
         goalIds: effectiveGoalIds.length > 0 ? effectiveGoalIds : undefined,
-        tagValueIds:
-          validSelectedTags.length > 0 ? validSelectedTags : undefined,
+        categoryIds:
+          selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["log-entries"] });
@@ -186,12 +157,6 @@ function EditEntryForm({
       prev.includes(categoryId)
         ? prev.filter((id) => id !== categoryId)
         : [...prev, categoryId],
-    );
-  }
-
-  function toggleTag(id: string) {
-    setSelectedTagIds((prev) =>
-      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id],
     );
   }
 
@@ -324,51 +289,6 @@ function EditEntryForm({
               );
             })}
           </div>
-        </div>
-      )}
-
-      {/* Tags grouped by category */}
-      {tagGroups.length > 0 && (
-        <div className="space-y-4">
-          <SectionLabel>Values</SectionLabel>
-          {tagGroups.map((group) => (
-            <div key={group.categoryId} className="space-y-2">
-              <div className="flex items-center gap-2">
-                {group.categoryColor && (
-                  <span
-                    className="h-1.5 w-1.5 rounded-full"
-                    style={{ backgroundColor: group.categoryColor }}
-                  />
-                )}
-                <span className="text-xs font-medium text-muted-foreground">
-                  {group.categoryName}
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {group.values.map((v) => {
-                  const isSelected = validSelectedTags.includes(v.id);
-                  return (
-                    <Badge
-                      key={v.id}
-                      variant={isSelected ? "default" : "outline"}
-                      className="cursor-pointer transition-all hover:shadow-sm"
-                      onClick={() => toggleTag(v.id)}
-                      style={
-                        isSelected && group.categoryColor
-                          ? {
-                              backgroundColor: group.categoryColor,
-                              borderColor: group.categoryColor,
-                            }
-                          : undefined
-                      }
-                    >
-                      {v.name}
-                    </Badge>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
         </div>
       )}
 

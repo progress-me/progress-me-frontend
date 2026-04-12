@@ -125,7 +125,7 @@ function TimelineContent() {
               </CardHeader>
               <CardContent className="space-y-2">
                 <p className="whitespace-pre-wrap text-sm">{entry.content}</p>
-                {(entry.goals?.length > 0 || entry.tags?.length > 0) && (
+                {(entry.goals?.length > 0 || entry.categories?.length > 0) && (
                   <div className="flex flex-wrap items-center gap-1.5">
                     {entry.goals
                       ?.filter((g) => !g.isDefault)
@@ -139,21 +139,21 @@ function TimelineContent() {
                           {g.title}
                         </Badge>
                       ))}
-                    {entry.tags?.map((tag) => (
+                    {entry.categories?.map((cat) => (
                       <Badge
-                        key={tag.id}
+                        key={cat.id}
                         variant="outline"
                         className="text-xs"
                         style={
-                          tag.categoryColor
+                          cat.color
                             ? {
-                                borderColor: tag.categoryColor,
-                                color: tag.categoryColor,
+                                borderColor: cat.color,
+                                color: cat.color,
                               }
                             : undefined
                         }
                       >
-                        {tag.name}
+                        {cat.name}
                       </Badge>
                     ))}
                   </div>
@@ -281,30 +281,27 @@ function DashboardContent() {
 
             <Card>
               <CardHeader className="pb-2">
-                <h3 className="font-semibold">Top Values</h3>
+                <h3 className="font-semibold">Top Categories</h3>
               </CardHeader>
               <CardContent className="space-y-2">
-                {data.topValues.length === 0 && (
+                {data.topCategories.length === 0 && (
                   <p className="text-sm text-muted-foreground">
-                    No tagged entries yet.
+                    No categorized entries yet.
                   </p>
                 )}
-                {data.topValues.map((v) => (
+                {data.topCategories.map((c) => (
                   <div
-                    key={v.id}
+                    key={c.id}
                     className="flex items-center justify-between text-sm"
                   >
                     <span className="flex items-center gap-2">
                       <Heart
                         className="h-3 w-3"
-                        style={{ color: v.categoryColor ?? undefined }}
+                        style={{ color: c.color ?? undefined }}
                       />
-                      {v.name}
-                      <span className="text-xs text-muted-foreground">
-                        ({v.categoryName})
-                      </span>
+                      {c.name}
                     </span>
-                    <Badge variant="secondary">{v.count}</Badge>
+                    <Badge variant="secondary">{c.count}</Badge>
                   </div>
                 ))}
               </CardContent>

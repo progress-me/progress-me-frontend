@@ -79,7 +79,7 @@ export function GoalsPage() {
     <div className="space-y-6">
       <div className="hidden items-center justify-between md:flex">
         <h1 className="text-2xl font-bold">
-          {activeTab === "goals" ? "Goals" : "Values & Categories"}
+          {activeTab === "goals" ? "Goals" : "Categories"}
         </h1>
         {activeTab === "goals" ? (
           <Button onClick={() => setShowCreateGoal(true)}>
@@ -98,7 +98,7 @@ export function GoalsPage() {
         <div className="flex items-center justify-between">
           <TabsList>
             <TabsTrigger value="goals">Goals</TabsTrigger>
-            <TabsTrigger value="values">Values & Categories</TabsTrigger>
+            <TabsTrigger value="values">Categories</TabsTrigger>
           </TabsList>
           {activeTab === "goals" ? (
             <Button
