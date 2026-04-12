@@ -27,6 +27,7 @@ export default function App() {
             <Route path="/chat/:sessionId" element={<ChatPage />} />
             <Route path="/profile" element={<PersonaPage />} />
             {/* Redirects for old bookmarks */}
+            <Route path="/" element={<Navigate to="/chat" replace />} />
             <Route
               path="/dashboard"
               element={<Navigate to="/entries" replace />}

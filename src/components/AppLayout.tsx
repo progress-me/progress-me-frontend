@@ -4,18 +4,18 @@ import { ErrorBoundary } from "./ErrorBoundary";
 import { Button } from "./ui/button";
 
 const navItems = [
+  {
+    to: "/chat",
+    label: "AI",
+    icon: MessageCircle,
+    paths: ["/chat"],
+  },
   { to: "/entries", label: "Timeline", icon: BookOpen, paths: ["/entries"] },
   {
     to: "/goals",
     label: "Goals",
     icon: Target,
     paths: ["/goals", "/categories"],
-  },
-  {
-    to: "/chat",
-    label: "AI",
-    icon: MessageCircle,
-    paths: ["/chat"],
   },
   { to: "/profile", label: "Profile", icon: User, paths: ["/profile"] },
 ];
@@ -30,7 +30,7 @@ export function AppLayout() {
     );
 
   const currentPageName =
-    navItems.find(({ paths }) => isActive(paths))?.label ?? "Timeline";
+    navItems.find(({ paths }) => isActive(paths))?.label ?? "AI";
 
   return (
     <div className="min-h-screen bg-background">
@@ -62,7 +62,7 @@ export function AppLayout() {
           </nav>
 
           <Link
-            to="/entries"
+            to="/chat"
             className="font-display text-lg font-semibold tracking-tight"
           >
             Progress Me
