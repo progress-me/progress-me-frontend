@@ -26,7 +26,7 @@ import {
   Target,
   TrendingUp,
 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -369,6 +369,7 @@ function ChatView({ sessionId }: { sessionId: string }) {
             onSend={(msg) => sendMutation.mutate(msg)}
             disabled={sendMutation.isPending}
             placeholder="Ask a follow-up question..."
+            draftKey={`chat-draft-${sessionId}`}
           />
         </div>
       </div>
@@ -381,6 +382,18 @@ export function ChatPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [historyOpen, setHistoryOpen] = useState(false);
+
+  // Restore last active session when landing on /chat without a sessionId
+  useEffect(() => {
+    if (!sessionId) {
+      const lastSession = sessionStorage.getItem("chat-last-session");
+      if (lastSession) {
+        navigate(`/chat/${lastSession}`, { replace: true });
+      }
+    } else {
+      sessionStorage.setItem("chat-last-session", sessionId);
+    }
+  }, [sessionId, navigate]);
 
   const handleOpenHistory = useCallback(() => setHistoryOpen(true), []);
   const handleCloseHistory = useCallback(() => setHistoryOpen(false), []);
@@ -397,6 +410,7 @@ export function ChatPage() {
   });
 
   const handleNewChat = () => {
+    sessionStorage.removeItem("chat-last-session");
     navigate("/chat");
     setHistoryOpen(false);
   };

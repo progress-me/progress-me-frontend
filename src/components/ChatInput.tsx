@@ -1,5 +1,6 @@
+import { useDraft } from "@/hooks/useDraft";
 import { Send } from "lucide-react";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 
 const MAX_LENGTH = 2000;
 
@@ -7,14 +8,16 @@ interface ChatInputProps {
   onSend: (message: string) => void;
   disabled?: boolean;
   placeholder?: string;
+  draftKey?: string;
 }
 
 export function ChatInput({
   onSend,
   disabled = false,
   placeholder = "Type a message...",
+  draftKey = "chat-draft",
 }: ChatInputProps) {
-  const [value, setValue] = useState("");
+  const [value, setValue, clearDraft] = useDraft(draftKey);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const trimmed = value.trim();
@@ -24,7 +27,7 @@ export function ChatInput({
   const handleSubmit = () => {
     if (!canSend) return;
     onSend(trimmed);
-    setValue("");
+    clearDraft();
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }

@@ -1,5 +1,4 @@
-import type { ActionStatus, ChatMessageResponse } from "@/types/api";
-import { Badge } from "@/components/ui/badge";
+import type { ChatMessageResponse } from "@/types/api";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { ProposalCard } from "./ProposalCard";
 
@@ -7,26 +6,6 @@ interface ChatMessageBubbleProps {
   message: ChatMessageResponse;
   onSendMessage?: (message: string) => void;
 }
-
-const statusBadgeConfig: Record<
-  Exclude<ActionStatus, "PROPOSED">,
-  { label: string; className: string }
-> = {
-  EXECUTED: {
-    label: "Executed",
-    className:
-      "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-  },
-  REJECTED: {
-    label: "Rejected",
-    className: "bg-muted text-muted-foreground",
-  },
-  CONFIRMED: {
-    label: "Confirmed",
-    className:
-      "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-  },
-};
 
 export function ChatMessageBubble({
   message,
@@ -66,35 +45,22 @@ export function ChatMessageBubble({
     );
   }
 
-  const isProposal = message.actionStatus === "PROPOSED";
-  const hasAction = message.actionStatus && message.actionStatus !== "PROPOSED";
-  const badgeConfig = hasAction
-    ? statusBadgeConfig[
-        message.actionStatus as Exclude<ActionStatus, "PROPOSED">
-      ]
-    : null;
+  const hasAction = !!message.actionStatus;
 
   return (
     <div className="flex flex-col items-start gap-1">
       <div className="max-w-[95%] rounded-2xl rounded-bl-md bg-muted px-3 py-2.5 md:max-w-[90%] md:px-4 md:py-3">
         <MarkdownRenderer content={message.content} />
-        {isProposal &&
-          message.actionType &&
-          message.actionPayload &&
-          onSendMessage && (
-            <ProposalCard
-              actionType={message.actionType}
-              actionPayload={message.actionPayload}
-              onConfirm={() => onSendMessage("confirm")}
-              onReject={() => onSendMessage("reject")}
-            />
-          )}
-        {badgeConfig && (
-          <div className="mt-2">
-            <Badge variant="outline" className={badgeConfig.className}>
-              {badgeConfig.label}
-            </Badge>
-          </div>
+        {hasAction && message.actionType && message.actionPayload && (
+          <ProposalCard
+            actionType={message.actionType}
+            actionPayload={message.actionPayload}
+            status={message.actionStatus ?? undefined}
+            onConfirm={
+              onSendMessage ? () => onSendMessage("confirm") : undefined
+            }
+            onReject={onSendMessage ? () => onSendMessage("reject") : undefined}
+          />
         )}
       </div>
       {time && (

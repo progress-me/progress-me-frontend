@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Send } from "lucide-react";
+import { useDraft } from "@/hooks/useDraft";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -30,7 +31,7 @@ function getGreeting(): string {
 export function NewEntryPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [content, setContent] = useState("");
+  const [content, setContent, clearContentDraft] = useDraft("new-entry-draft");
   const [mood, setMood] = useState(6);
   const [energy, setEnergy] = useState(6);
   const [selectedGoalIds, setSelectedGoalIds] = useState<string[]>([]);
@@ -111,6 +112,7 @@ export function NewEntryPage() {
   const mutation = useMutation({
     mutationFn: createLogEntry,
     onSuccess: () => {
+      clearContentDraft();
       queryClient.invalidateQueries({ queryKey: ["log-entries"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Entry created");
