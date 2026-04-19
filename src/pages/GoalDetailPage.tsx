@@ -101,7 +101,7 @@ export function GoalDetailPage() {
 
       {/* Header */}
       <div className="rounded-xl border bg-card p-6">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 flex-1">
             <div className="mb-2 flex flex-wrap items-center gap-2">
               <span
@@ -138,7 +138,7 @@ export function GoalDetailPage() {
               </p>
             )}
           </div>
-          <div className="flex shrink-0 gap-2">
+          <div className="flex flex-wrap shrink-0 gap-2">
             {actions.map(({ label, next }) => (
               <Button
                 key={next}
