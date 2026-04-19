@@ -3,13 +3,17 @@ import {
   getChatStarters,
   getSessionMessages,
   listChatSessions,
-  sendMessage,
+  sendMessageStream,
 } from "@/api/chat";
 import { ChatInput } from "@/components/ChatInput";
 import { ChatMessageList } from "@/components/ChatMessageList";
 import { MobileHistoryDrawer } from "@/components/MobileHistoryDrawer";
 import { Button } from "@/components/ui/button";
-import type { ChatMessageResponse, ChatSessionResponse } from "@/types/api";
+import type {
+  ChatMessageResponse,
+  ChatSessionResponse,
+  Page,
+} from "@/types/api";
 import {
   keepPreviousData,
   useMutation,
@@ -26,7 +30,7 @@ import {
   Target,
   TrendingUp,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -48,7 +52,11 @@ function groupSessionsByDate(
   const order = ["Today", "This week", "Older"];
   const groups = new Map<string, ChatSessionResponse[]>();
 
-  for (const session of sessions) {
+  const sorted = [...sessions].sort(
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+  );
+
+  for (const session of sorted) {
     const group = getDateGroup(session.updatedAt);
     if (!groups.has(group)) groups.set(group, []);
     groups.get(group)!.push(session);
@@ -255,6 +263,20 @@ function StartersView({
 
 function ChatView({ sessionId }: { sessionId: string }) {
   const queryClient = useQueryClient();
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamedText, setStreamedText] = useState("");
+  const [statusPhase, setStatusPhase] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const rawStreamRef = useRef("");
+  const prevSessionRef = useRef(sessionId);
+
+  // Abort streaming only on real session change, not strict mode remount
+  useEffect(() => {
+    if (prevSessionRef.current !== sessionId) {
+      abortRef.current?.abort();
+      prevSessionRef.current = sessionId;
+    }
+  }, [sessionId]);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["chat-messages", sessionId],
@@ -262,75 +284,127 @@ function ChatView({ sessionId }: { sessionId: string }) {
     enabled: !!sessionId,
   });
 
-  const sendMutation = useMutation({
-    mutationFn: (message: string) => sendMessage(sessionId, { message }),
-    onMutate: async (message) => {
-      await queryClient.cancelQueries({
-        queryKey: ["chat-messages", sessionId],
-      });
+  const handleSend = useCallback(
+    async (message: string) => {
+      if (isStreaming) return;
 
-      const previous = queryClient.getQueryData(["chat-messages", sessionId]);
+      // Optimistic user message
+      const optimisticMessage: ChatMessageResponse = {
+        id: `optimistic-${Date.now()}`,
+        role: "USER",
+        content: message,
+        actionType: null,
+        actionPayload: null,
+        actionStatus: null,
+        createdAt: new Date().toISOString(),
+      };
 
       queryClient.setQueryData(
         ["chat-messages", sessionId],
-        (old: typeof data) => {
+        (old: Page<ChatMessageResponse> | undefined) => {
           if (!old) return old;
-          const optimisticMessage: ChatMessageResponse = {
-            id: `optimistic-${Date.now()}`,
-            role: "USER",
-            content: message,
-            actionType: null,
-            actionPayload: null,
-            actionStatus: null,
-            createdAt: new Date().toISOString(),
-          };
-          return {
-            ...old,
-            content: [...old.content, optimisticMessage],
-          };
+          return { ...old, content: [...old.content, optimisticMessage] };
         },
       );
 
-      return { previous };
-    },
-    onSuccess: (assistantMessage) => {
+      // Move active session to top by updating its updatedAt
       queryClient.setQueryData(
-        ["chat-messages", sessionId],
-        (old: typeof data) => {
+        ["chat-sessions", 0],
+        (old: Page<ChatSessionResponse> | undefined) => {
           if (!old) return old;
-          return {
-            ...old,
-            content: [
-              ...old.content,
-              {
-                ...assistantMessage,
-                createdAt:
-                  assistantMessage.createdAt ?? new Date().toISOString(),
-              },
-            ],
-          };
+          const now = new Date().toISOString();
+          const updated = old.content
+            .map((s) => (s.id === sessionId ? { ...s, updatedAt: now } : s))
+            .sort(
+              (a, b) =>
+                new Date(b.updatedAt).getTime() -
+                new Date(a.updatedAt).getTime(),
+            );
+          return { ...old, content: updated };
         },
       );
-      queryClient.invalidateQueries({ queryKey: ["chat-sessions"] });
-      // Refetch messages to get updated actionStatus on original proposals
-      queryClient.invalidateQueries({ queryKey: ["chat-messages", sessionId] });
-      // The EXECUTED status is set on the original proposal message (not the response),
-      // so invalidate related queries whenever the conversation involves actions
-      if (assistantMessage.actionType) {
-        queryClient.invalidateQueries({ queryKey: ["goals"] });
-        queryClient.invalidateQueries({ queryKey: ["log-entries"] });
-      }
-    },
-    onError: (_error, _message, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(
-          ["chat-messages", sessionId],
-          context.previous,
+
+      setIsStreaming(true);
+      setStreamedText("");
+      setStatusPhase(null);
+      rawStreamRef.current = "";
+
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      try {
+        await sendMessageStream(
+          sessionId,
+          message,
+          {
+            onStatus: (phase) => setStatusPhase(phase),
+            onToken: (text) => {
+              setStatusPhase(null);
+              rawStreamRef.current += text;
+              const raw = rawStreamRef.current;
+              const jsonMarker = raw.indexOf("```json");
+              setStreamedText(
+                jsonMarker >= 0 ? raw.slice(0, jsonMarker).trim() : raw,
+              );
+            },
+            onProposal: () => {
+              // Proposal data will be part of the done message
+            },
+            onDone: (doneMsg) => {
+              setIsStreaming(false);
+              setStreamedText("");
+              setStatusPhase(null);
+
+              const assistantMessage: ChatMessageResponse = {
+                id: doneMsg.messageId,
+                role: "ASSISTANT",
+                content: doneMsg.content,
+                actionType: doneMsg.actionType ?? null,
+                actionPayload: doneMsg.actionPayload ?? null,
+                actionStatus: doneMsg.actionStatus ?? null,
+                createdAt: new Date().toISOString(),
+              };
+
+              queryClient.setQueryData(
+                ["chat-messages", sessionId],
+                (old: Page<ChatMessageResponse> | undefined) => {
+                  if (!old) return old;
+                  return {
+                    ...old,
+                    content: [...old.content, assistantMessage],
+                  };
+                },
+              );
+
+              queryClient.invalidateQueries({ queryKey: ["chat-sessions"] });
+              queryClient.invalidateQueries({
+                queryKey: ["chat-messages", sessionId],
+              });
+
+              if (doneMsg.actionType) {
+                queryClient.invalidateQueries({ queryKey: ["goals"] });
+                queryClient.invalidateQueries({ queryKey: ["log-entries"] });
+              }
+            },
+            onError: (error) => {
+              setIsStreaming(false);
+              setStreamedText("");
+              setStatusPhase(null);
+              toast.error(error || "Failed to send message. Please try again.");
+            },
+          },
+          controller.signal,
         );
+      } catch (err) {
+        setIsStreaming(false);
+        setStreamedText("");
+        setStatusPhase(null);
+        if ((err as Error).name === "AbortError") return;
+        toast.error("Failed to send message. Please try again.");
       }
-      toast.error("Failed to send message. Please try again.");
     },
-  });
+    [sessionId, isStreaming, queryClient],
+  );
 
   if (isLoading) {
     return (
@@ -358,16 +432,18 @@ function ChatView({ sessionId }: { sessionId: string }) {
         <div className="mx-auto max-w-2xl">
           <ChatMessageList
             messages={messages}
-            isPending={sendMutation.isPending}
-            onSendMessage={(msg) => sendMutation.mutate(msg)}
+            isPending={isStreaming}
+            onSendMessage={handleSend}
+            streamingText={streamedText || undefined}
+            statusPhase={statusPhase}
           />
         </div>
       </div>
       <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-transparent via-background/80 to-transparent px-2 pb-6 pt-4 md:px-4 md:pb-6">
         <div className="pointer-events-auto mx-auto max-w-2xl">
           <ChatInput
-            onSend={(msg) => sendMutation.mutate(msg)}
-            disabled={sendMutation.isPending}
+            onSend={handleSend}
+            disabled={isStreaming}
             placeholder="Ask a follow-up question..."
             draftKey={`chat-draft-${sessionId}`}
           />

@@ -279,6 +279,28 @@ export interface PrebuiltPromptResponse {
   query: string;
 }
 
+// --- Chat Streaming ---
+
+export interface StreamDoneMessage {
+  messageId: string;
+  content: string;
+  actionType?: ActionType;
+  actionPayload?: Record<string, unknown>;
+  actionStatus?: ActionStatus;
+}
+
+export interface StreamCallbacks {
+  onStatus: (phase: string) => void;
+  onToken: (text: string) => void;
+  onProposal: (proposal: {
+    actionType: string;
+    actionPayload: Record<string, unknown>;
+    humanReadableSummary: string;
+  }) => void;
+  onDone: (message: StreamDoneMessage) => void;
+  onError: (error: string) => void;
+}
+
 // --- AI Settings ---
 
 export interface AiSettingsResponse {
