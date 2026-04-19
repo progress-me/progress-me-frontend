@@ -42,16 +42,15 @@ const components: Components = {
       {children}
     </blockquote>
   ),
+  pre: ({ children }) => (
+    <pre className="my-3 max-w-full overflow-x-auto rounded-lg bg-muted/70 p-4 text-sm">
+      {children}
+    </pre>
+  ),
   code: ({ children, className }) => {
     const isBlock = className?.includes("language-");
     if (isBlock) {
-      return (
-        <code
-          className={`${className} block overflow-x-auto rounded-lg bg-muted/70 p-4 text-sm`}
-        >
-          {children}
-        </code>
-      );
+      return <code className={className}>{children}</code>;
     }
     return (
       <code className="rounded-md bg-muted/70 px-1.5 py-0.5 text-sm font-medium text-foreground/90">
@@ -63,7 +62,7 @@ const components: Components = {
 
 export function MarkdownRenderer({ content }: MarkdownRendererProps) {
   return (
-    <div className="insight-content text-[0.935rem]">
+    <div className="insight-content text-[0.935rem] overflow-hidden">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeSanitize]}

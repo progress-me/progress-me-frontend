@@ -49,7 +49,7 @@ export function ChatMessageBubble({
 
   return (
     <div className="flex flex-col items-start gap-1">
-      <div className="max-w-[95%] rounded-2xl rounded-bl-md bg-muted px-3 py-2.5 md:max-w-[90%] md:px-4 md:py-3">
+      <div className="max-w-[95%] min-w-0 overflow-hidden rounded-2xl rounded-bl-md bg-muted px-3 py-2.5 md:max-w-[90%] md:px-4 md:py-3">
         <MarkdownRenderer content={message.content} />
         {hasAction && message.actionType && message.actionPayload && (
           <ProposalCard

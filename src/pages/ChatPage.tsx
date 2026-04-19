@@ -452,7 +452,7 @@ export function ChatPage() {
       </MobileHistoryDrawer>
 
       {/* Main area */}
-      <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex min-w-0 min-h-0 flex-1 flex-col">
         {sessionId ? (
           <ChatView sessionId={sessionId} />
         ) : (
