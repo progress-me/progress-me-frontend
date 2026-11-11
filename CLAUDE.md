@@ -25,18 +25,25 @@ React 19 + TypeScript 5.9, Vite 7, Tailwind CSS v4 (via `@tailwindcss/vite` plug
 
 ### Key patterns
 
-- **API layer** (`src/api/`): One module per domain (auth, goals, categories, log-entries, chat, dashboard, persona, ai-settings). All use a shared Axios client (`client.ts`) that handles JWT Bearer tokens, automatic 401 refresh via interceptors, and `auth:logout` custom event dispatch on failure.
-- **Auth**: `AuthContext` manages JWT + refresh token lifecycle. Tokens stored in `localStorage`. Proactive refresh every 4 minutes. Components use `useAuth()` hook. `ProtectedRoute` wraps authenticated routes.
+- **API layer** (`src/api/`): One module per domain (auth, goals, categories, log-entries, chat, dashboard, persona, ai-settings). Some have no dedicated page anymore (categories are managed within goals, dashboard stats feed `/entries`, ai-settings lives under `/profile`). All use a shared Axios client (`client.ts`).
+- **Base URL**: `VITE_API_BASE_URL ?? "/api"` is read in two places — `client.ts` and the raw `fetch` in `chat.ts`. Change both together.
+- **Auth**: `AuthContext` manages JWT + refresh token lifecycle. Tokens stored in `localStorage` (`token`, `refreshToken`, `user`). Proactive refresh every 4 minutes. Components use `useAuth()` hook. `ProtectedRoute` wraps authenticated routes.
+- **401/403 refresh** (`client.ts`): the response interceptor retries once on 401 _or_ 403, skips URLs starting with `/auth/`, and de-dupes concurrent refreshes via a shared `refreshPromise`. On failure it clears the three localStorage keys and dispatches `auth:logout`.
+- **Chat streaming (SSE)**: `sendMessageStream` in `api/chat.ts` uses raw `fetch` + a manual `event:`/`data:` parser, **not** Axios, so it bypasses the refresh interceptor (it reads the token directly and throws `HTTP <status>` on failure). Events (`status`, `token`, `proposal`, `done`, `error`) map to `StreamCallbacks` in `types/api.ts`. `vite.config.ts` patches proxy headers for URLs containing `/stream` to disable buffering; `nginx.conf` has no SSE-specific settings, so production relies on the backend sending `X-Accel-Buffering: no`.
 - **Server state**: TanStack React Query for all data fetching/caching (configured with 30s stale time, 1 retry). No global state management beyond AuthContext.
-- **Routing**: Flat route structure in `App.tsx`. `AppLayout` provides shared chrome for authenticated pages. Legacy paths redirect to new locations.
+- **Routing**: Flat route structure in `App.tsx`. `AppLayout` provides shared chrome for authenticated pages. Current routes: `/entries`, `/entries/new`, `/goals`, `/goals/:id`, `/chat[/:sessionId]`, `/profile`; `/` goes to `/chat`. Legacy paths (`/dashboard`, `/categories`, `/analysis`, `/insights*`, `/ai-settings`) are redirect-only — don't add pages there.
 - **UI components**: Domain components in `src/components/`, shadcn/ui primitives in `src/components/ui/`. Icons from `lucide-react`. Toasts via `sonner`.
 - **Path alias**: `@/` maps to `src/` (configured in both `tsconfig.json` and `vite.config.ts`).
 - **Types**: All API request/response types in `src/types/api.ts`. Matches the Spring Boot backend DTOs.
 
 ### Testing
 
-Vitest with jsdom environment, `@testing-library/react` + `@testing-library/jest-dom`. Setup file at `src/test/setup.ts`. Tests are colocated with source files (e.g., `client.test.ts` next to `client.ts`).
+Vitest (jsdom) + Testing Library, setup in `src/test/setup.ts`, tests colocated. Coverage is thin: only `api/client.test.ts` and `context/auth-utils.test.ts` exist.
+
+### CI
+
+`.github/workflows/ci.yml` runs `npm run lint` and `npm run build` on Node 20 — it does **not** run `npm run test`, so run tests locally. `publish.yml` (manual) builds and pushes the Docker image.
 
 ### Production
 
-Multi-stage Docker build: Node 22 Alpine -> nginx Alpine. Nginx proxies `/api/` to `http://backend:8080` with SPA history-mode fallback.
+Docker: Node 22 Alpine build -> nginx Alpine. Nginx proxies `/api/` to `http://backend:8080` with SPA fallback.
